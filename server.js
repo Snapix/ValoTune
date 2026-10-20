@@ -20,7 +20,7 @@ app.get("/api/search", async (req, res) => {
     res.json({ results: (Array.isArray(items) ? items : []).map((item, i) => ({
       id: item.videoId || item.browseId || `${q}-${i}`, videoId: item.videoId || "",
       title: item.name || item.title || "Untitled",
-      artist: Array.isArray(item.artists) ? item.artists.map(a => a.name || a).join(", ") : item.artist || item.author || "YouTube Music",
+      artist: (Array.isArray(item.artists) ? item.artists.map(a => typeof a === "string" ? a : a?.name).filter(Boolean).join(", ") : "") || (typeof item.artist === "string" ? item.artist : (item.artist?.name && !/^\d{1,2}:\d{2}$/.test(item.artist.name) ? item.artist.name : "")) || (typeof item.author === "string" ? item.author : item.author?.name) || "YouTube Music",
       album: item.album?.name || item.album || "", thumbnail: item.thumbnails?.at(-1)?.url || "",
       type: item.type || "song", duration: item.duration || null
     })) });

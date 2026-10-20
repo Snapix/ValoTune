@@ -30,40 +30,27 @@
       </header>
 
       <section id="home" class="page active" aria-labelledby="home-title">
-        <div class="hero">
-          <div class="hero-copy">
-            <small>● YOUR DAILY SOUNDTRACK</small>
-            <h1 id="home-title">Find your<br><em>own rhythm.</em></h1>
-            <p>Good music for wherever life takes you.</p>
-            <button type="button" id="explore" class="primary">Explore music ↗</button>
-          </div>
-          <div class="art" aria-hidden="true"><div class="disc"></div><span>SOUND<br>IN COLOUR</span></div>
+        <div class="welcome-row">
+          <div><small class="eyebrow">YOUR MUSIC, RIGHT NOW</small><h1 id="home-title">In rotation<span>.</span></h1><p>Real tracks from YouTube Music. Find your next repeat.</p></div>
+          <button type="button" class="primary" data-page="discover">Explore discovery ↗</button>
         </div>
-        <div class="heading">
-          <div><small>A LITTLE INSPIRATION</small><h2>Made for your mood</h2></div>
-          <button type="button" class="text" data-page="discover">Discover all ↗</button>
-        </div>
-        <div class="moods">
-          <button type="button" data-query="indie chill"><b>☼</b><strong>Slow mornings</strong><small>Soft, warm, unhurried</small></button>
-          <button type="button" data-query="dream pop"><b>◌</b><strong>After hours</strong><small>A little space to think</small></button>
-          <button type="button" data-query="feel good pop hits"><b>✳</b><strong>Good energy</strong><small>Turn the day around</small></button>
-          <button type="button" data-query="acoustic mellow"><b>〰</b><strong>Take it easy</strong><small>Let everything settle</small></button>
-        </div>
-        <div class="heading"><div><small>FRESH FINDS</small><h2>Find something new</h2></div></div>
-        <div id="results" aria-live="polite"><p class="hint">Search a song or artist to get started.</p></div>
+        <section class="music-section" aria-labelledby="top-title"><div class="heading"><div><small>THE STARTING LINE</small><h2 id="top-title">Top 10 songs</h2><p class="section-note">Popular searches, real track listings.</p></div><button type="button" class="text" data-query="top 10 songs global hits">Refresh ↗</button></div><div id="top-tracks" class="track-list"><p class="hint">Loading current music…</p></div></section>
+        <section class="music-section" aria-labelledby="popular-title"><div class="heading"><div><small>IN HEAVY ROTATION</small><h2 id="popular-title">Popular right now</h2></div><button type="button" class="text" data-query="popular songs right now">More ↗</button></div><div id="popular-tracks" class="track-list"><p class="hint">Finding popular tracks…</p></div></section>
+        <section class="music-section" aria-labelledby="trending-title"><div class="heading"><div><small>WHAT'S MOVING</small><h2 id="trending-title">Trending</h2></div><button type="button" class="text" data-query="trending music hits">More ↗</button></div><div id="trending-tracks" class="track-list"><p class="hint">Finding trending tracks…</p></div></section>
+        <section class="music-section" aria-labelledby="fresh-title"><div class="heading"><div><small>NEW TO YOUR EARS</small><h2 id="fresh-title">Fresh finds</h2></div><button type="button" class="text" data-query="new music releases 2026">More ↗</button></div><div id="fresh-tracks" class="track-list"><p class="hint">Finding new releases…</p></div></section>
+        <section class="music-section" aria-labelledby="genres-title"><div class="heading"><div><small>PICK A DIRECTION</small><h2 id="genres-title">Explore by sound</h2></div></div><div class="genre-grid">
+          <button type="button" data-query="global pop hits">Pop <span>↗</span></button><button type="button" data-query="indie alternative songs">Indie & alternative <span>↗</span></button><button type="button" data-query="hip hop hits">Hip-hop <span>↗</span></button><button type="button" data-query="rnb soul essentials">R&B and soul <span>↗</span></button><button type="button" data-query="rock classics hits">Rock <span>↗</span></button><button type="button" data-query="lofi chill beats">Chill & lo-fi <span>↗</span></button><button type="button" data-query="tamil trending songs">Tamil hits <span>↗</span></button><button type="button" data-query="hindi popular songs">Hindi hits <span>↗</span></button>
+        </div></section>
+        <section class="music-section"><div class="heading"><div><small>YOUR LATEST SEARCH</small><h2>Search results</h2></div></div><div id="results" class="track-list" aria-live="polite"><p class="hint">Search a song, artist, album, or genre above.</p></div></section>
       </section>
 
       <section id="discover" class="page" aria-labelledby="discover-title">
-        <small>FOLLOW YOUR CURIOSITY</small>
-        <h1 id="discover-title" class="page-title">Discover <em>something.</em></h1>
-        <p>Search for an artist, track, album, or mood.</p>
-        <button type="button" class="primary" id="focus-search">Start searching ↗</button>
-        <div class="chips">
-          <button type="button" data-query="indie essentials">Indie essentials</button>
-          <button type="button" data-query="jazz classics">Jazz classics</button>
-          <button type="button" data-query="ambient focus">Ambient focus</button>
-          <button type="button" data-query="90s alternative">90s alternative</button>
-        </div>
+        <small class="eyebrow">THE WORLD IS LISTENING</small><h1 id="discover-title" class="page-title">Discover<span>.</span></h1><p>Explore real music results by chart, mood, scene, or sound.</p>
+        <div class="discover-feature"><div><small class="eyebrow">START SOMEWHERE</small><h2>What are you in the mood for?</h2><p>Choose a lane. ValoTune will fetch matching tracks from YouTube Music.</p></div><form id="discover-search" role="search"><input id="discover-query" type="search" placeholder="Try “Tamil indie”, “jazz”, “workout”…" aria-label="Discover music"><button type="submit" class="primary">Find tracks ↗</button></form></div>
+        <section class="music-section"><div class="heading"><div><small>THE BIG LISTS</small><h2>Charts & popular</h2></div></div><div class="genre-grid"><button type="button" data-query="global top songs chart">Global Top Songs <span>↗</span></button><button type="button" data-query="India top songs chart">India Top Songs <span>↗</span></button><button type="button" data-query="viral trending songs">Viral & trending <span>↗</span></button><button type="button" data-query="popular songs this week">Popular this week <span>↗</span></button></div></section>
+        <section class="music-section"><div class="heading"><div><small>MOOD AND MOMENT</small><h2>Find your atmosphere</h2></div></div><div class="genre-grid"><button type="button" data-query="feel good upbeat songs">Feel-good energy <span>↗</span></button><button type="button" data-query="late night R&B playlist">Late-night R&B <span>↗</span></button><button type="button" data-query="focus instrumental ambient music">Focus mode <span>↗</span></button><button type="button" data-query="acoustic mellow songs">Acoustic calm <span>↗</span></button><button type="button" data-query="gym workout high energy songs">Workout <span>↗</span></button><button type="button" data-query="romantic songs love hits">Love songs <span>↗</span></button></div></section>
+        <section class="music-section"><div class="heading"><div><small>REGIONAL SPOTLIGHT</small><h2>Closer to home</h2></div></div><div class="genre-grid"><button type="button" data-query="Tamil latest hit songs">Tamil <span>↗</span></button><button type="button" data-query="Telugu latest hit songs">Telugu <span>↗</span></button><button type="button" data-query="Malayalam hit songs">Malayalam <span>↗</span></button><button type="button" data-query="Hindi latest hit songs">Hindi <span>↗</span></button><button type="button" data-query="Punjabi popular songs">Punjabi <span>↗</span></button><button type="button" data-query="K-pop trending songs">K-pop <span>↗</span></button></div></section>
+        <section class="music-section"><div class="heading"><div><small>RESULTS</small><h2 id="discover-results-title">Pick a collection</h2></div></div><div id="discover-results" class="track-list" aria-live="polite"><p class="hint">Choose a chart, mood, or search above to load actual tracks.</p></div></section>
       </section>
 
       <section id="library" class="page" aria-labelledby="library-title">
@@ -78,17 +65,28 @@
       </section>
 
       <section id="settings" class="page" aria-labelledby="settings-title">
-        <small>MAKE IT YOURS</small>
-        <h1 id="settings-title" class="page-title">Settings.</h1>
-        <div class="setting"><strong>Local library</strong><p>Liked tracks and recent items are stored in this browser only.</p></div>
-        <div class="setting"><strong>Music source</strong><p>Search uses unofficial ytmusic-api metadata; playback uses YouTube embeds.</p></div>
-        <div class="setting"><strong>Motion</strong><p>The navigation respects your device’s reduced-motion preference.</p></div>
+        <small class="eyebrow">TUNE THE EXPERIENCE</small><h1 id="settings-title" class="page-title">Settings<span>.</span></h1><p>These preferences apply to this browser and save locally.</p>
+        <div class="settings-group"><div class="settings-heading"><h2>Appearance</h2><p>Make ValoTune feel right for you.</p></div>
+          <label class="setting-row"><span><strong>Colour theme</strong><small>Choose a dark or light interface.</small></span><select id="setting-theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+          <label class="setting-row"><span><strong>Accent colour</strong><small>Used for active navigation and controls.</small></span><select id="setting-accent"><option value="lime">Lime</option><option value="violet">Violet</option><option value="blue">Blue</option><option value="coral">Coral</option></select></label>
+          <label class="setting-row"><span><strong>Compact track lists</strong><small>Show more songs on screen.</small></span><input id="setting-compact" type="checkbox"></label>
+        </div>
+        <div class="settings-group"><div class="settings-heading"><h2>Playback</h2><p>Control the listening experience.</p></div>
+          <label class="setting-row"><span><strong>Default volume</strong><small>Applies when you change tracks.</small></span><div class="setting-volume"><input id="setting-volume" type="range" min="0" max="100" value="70"><output id="setting-volume-value">70%</output></div></label>
+          <label class="setting-row"><span><strong>Open full player when starting a track</strong><small>Open the expanded player automatically.</small></span><input id="setting-autofull" type="checkbox"></label>
+        </div>
+        <div class="settings-group"><div class="settings-heading"><h2>Accessibility & data</h2><p>Respect your preferences and keep your library under your control.</p></div>
+          <label class="setting-row"><span><strong>Reduce animations</strong><small>Use less motion throughout the interface.</small></span><input id="setting-reduced" type="checkbox"></label>
+          <div class="setting-row"><span><strong>Local library</strong><small>Liked tracks and listening history are stored in this browser only.</small></span><button type="button" class="secondary" id="export-library">Export library</button></div>
+          <div class="setting-row"><span><strong>Clear local data</strong><small>Remove saved likes, listening history, and ValoTune preferences.</small></span><button type="button" class="danger" id="clear-data">Clear data</button></div>
+        </div>
+        <p class="settings-status" id="settings-status" role="status" aria-live="polite">Changes save automatically.</p>
       </section>
       <footer><span>VALOTUNE</span><span>GOOD MUSIC, RIGHT WHEN YOU NEED IT.</span></footer>
     </main>
   </div>
 
-  <div class="player" aria-label="Music player">
+  <button type="button" class="player" id="mini-player" aria-label="Open full music player">
     <div class="now">
       <div id="cover" class="cover" aria-hidden="true">♫</div>
       <div class="now-meta"><strong id="now-title">Choose a track</strong><small id="now-artist">Your next favourite is out there</small></div>
@@ -104,6 +102,10 @@
     </div>
     <label class="volume" for="volume"><span aria-hidden="true">♫</span><input id="volume" type="range" min="0" max="100" value="70" aria-label="Volume"></label>
     <div id="youtube" aria-hidden="true"></div>
+  </button>
+  <div id="full-player" class="full-player" hidden role="dialog" aria-modal="true" aria-labelledby="full-title">
+    <div class="full-player__bar"><a class="brand" href="#" data-page="home">♫ valo<span>tune</span></a><button type="button" id="close-full" class="icon-button" aria-label="Close full player">×</button></div>
+    <div class="full-player__content"><div class="full-player__visual"><div id="full-cover" class="full-cover">♫</div><div id="full-video" class="full-video"></div></div><div class="full-player__meta"><small class="eyebrow">NOW PLAYING</small><h2 id="full-title">Choose a track</h2><p id="full-artist">Your next favourite is out there</p><div class="full-player__controls"><button type="button" id="full-prev" class="icon-button" aria-label="Previous track">|◀</button><button type="button" id="full-play" class="primary" aria-label="Play or pause">▶ Play</button><button type="button" id="full-next" class="icon-button" aria-label="Next track">▶|</button><button type="button" id="full-like" class="icon-button" aria-label="Like current track">♡</button></div><label class="full-volume">Volume <input id="full-volume" type="range" min="0" max="100" value="70"><output id="full-volume-value">70%</output></label><p class="full-note">Playback is provided by YouTube. Use the video controls for seeking and other playback options.</p></div></div>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/app.js" defer></script>

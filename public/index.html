@@ -86,7 +86,7 @@
     </main>
   </div>
 
-  <button type="button" class="player" id="mini-player" aria-label="Open full music player">
+  <div class="player" id="mini-player" role="group" aria-label="Music player">
     <div class="now">
       <div id="cover" class="cover" aria-hidden="true">♫</div>
       <div class="now-meta"><strong id="now-title">Choose a track</strong><small id="now-artist">Your next favourite is out there</small></div>
@@ -102,7 +102,7 @@
     </div>
     <label class="volume" for="volume"><span aria-hidden="true">♫</span><input id="volume" type="range" min="0" max="100" value="70" aria-label="Volume"></label>
     <div id="youtube" aria-hidden="true"></div>
-  </button>
+  </div>
   <div id="full-player" class="full-player" hidden role="dialog" aria-modal="true" aria-labelledby="full-title">
     <div class="full-player__bar"><a class="brand" href="#" data-page="home">♫ valo<span>tune</span></a><button type="button" id="close-full" class="icon-button" aria-label="Close full player">×</button></div>
     <div class="full-player__content"><div class="full-player__visual"><div id="full-cover" class="full-cover">♫</div><div id="full-video" class="full-video"></div></div><div class="full-player__meta"><small class="eyebrow">NOW PLAYING</small><h2 id="full-title">Choose a track</h2><p id="full-artist">Your next favourite is out there</p><div class="full-player__controls"><button type="button" id="full-prev" class="icon-button" aria-label="Previous track">|◀</button><button type="button" id="full-play" class="primary" aria-label="Play or pause">▶ Play</button><button type="button" id="full-next" class="icon-button" aria-label="Next track">▶|</button><button type="button" id="full-like" class="icon-button" aria-label="Like current track">♡</button></div><label class="full-volume">Volume <input id="full-volume" type="range" min="0" max="100" value="70"><output id="full-volume-value">70%</output></label><p class="full-note">Playback is provided by YouTube. Use the video controls for seeking and other playback options.</p></div></div>

@@ -11,7 +11,7 @@ main{width:min(100%,1600px);margin:0 auto;padding:0 34px calc(var(--player-heigh
 .brand{flex:0 0 auto;color:var(--cream);font:27px Georgia,serif;text-decoration:none;white-space:nowrap;letter-spacing:-1px}
 .brand span{color:var(--accent)}
 .gooey-nav{position:relative;isolation:isolate;display:flex;align-items:center;gap:4px;padding:5px;border:1px solid rgba(255,255,255,.07);border-radius:999px;background:rgba(38,35,46,.66);box-shadow:0 12px 28px -20px #000;flex:0 0 auto;max-width:100%}
-.gooey-nav__pill{position:absolute;z-index:-1;left:5px;top:5px;height:calc(100% - 10px);width:var(--pill-width,64px);border-radius:999px;background:var(--accent);transform:translateX(var(--pill-x,0));transition:transform .38s cubic-bezier(.2,.8,.2,1),width .28s ease;filter:drop-shadow(0 3px 7px rgba(215,241,123,.12))}
+.gooey-nav__pill{position:absolute;z-index:-1;left:0;top:5px;height:calc(100% - 10px);width:var(--pill-width,64px);border-radius:999px;background:var(--accent);transform:translateX(var(--pill-x,0));transition:transform .38s cubic-bezier(.2,.8,.2,1),width .28s ease;filter:drop-shadow(0 3px 7px rgba(215,241,123,.12))}
 .nav{position:relative;border:0;background:transparent;text-align:center;padding:9px 15px;border-radius:999px;color:#b5b6ab;white-space:nowrap;font-size:13px;font-weight:600;transition:color .2s ease}
 .nav:hover{color:var(--cream)}
 .nav.active{color:#202218}

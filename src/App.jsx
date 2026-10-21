@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import NyxMusicPlayer from "./components/NyxMusicPlayer.jsx";
+import NyxMusicPlayer from "./components/MusicPlayer.jsx";
 
 const initialSettings = { theme: "dark", accent: "lime", compact: false, volume: 70, reduceMotion: false, autoplayFull: false };
 const accents = { lime: "#d7f17b", violet: "#c7a7ff", blue: "#8fc9ff", coral: "#ffad99" };

@@ -5,25 +5,10 @@ export interface Song {
   thumb: string;
   duration: number;
 }
-
-export interface Section {
-  title: string;
-  songs: Song[];
-}
-
-export interface Artist {
-  name: string;
-  thumb: string;
-}
-
-export interface Settings {
-  accent: string;
-  volume: number;
-  autoplay: boolean;
-}
-
-export const fmt = (s: number) => {
-  if (!isFinite(s) || s < 0) s = 0;
-  const m = Math.floor(s / 60);
-  return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+export interface Section { title: string; songs: Song[] }
+export interface Artist { name: string; thumb: string }
+export interface Settings { accent: string; volume: number; autoplay: boolean }
+export const fmt = (seconds: number) => {
+  const safe = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`;
 };

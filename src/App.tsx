@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GooeyNav from './components/GooeyNav';
 import ElasticSlider from './components/ElasticSlider';
 import { usePlayer } from './player';
@@ -8,102 +8,171 @@ import { fmt, type Artist, type Section, type Settings, type Song } from './type
 const ACCENTS = ['#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b', '#f43f5e'];
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
 const TABS = ['Home', 'Discover', 'Library', 'Settings'];
-
-const I = {
-  play: <path d="M8 5v14l11-7z" fill="currentColor" />,
-  pause: <path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" />,
-  next: <path d="M6 5l9 7-9 7zM17 5h2v14h-2z" fill="currentColor" />,
-  prev: <path d="M18 5l-9 7 9 7zM5 5h2v14H5z" fill="currentColor" />,
-  heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
-  search: <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm9 16-4-4" />,
-  music: <path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
-};
-const Icon = ({ d, size = 20, fill = false }: { d: ReactNode; size?: number; fill?: boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke={fill ? 'none' : 'currentColor'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
-);
+type SearchData = { songs: Song[]; artists: Artist[] };
+type ViewProps = { play: (song: Song, list?: Song[]) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
 const api = async <T,>(url: string): Promise<T> => {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Request failed (${r.status})`);
-  return r.json();
+  const response = await fetch(url);
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    try { message = (await response.json()).error || message; } catch { /* ignore */ }
+    throw new Error(message);
+  }
+  return response.json() as Promise<T>;
 };
+const key = (song: Song) => song.videoId;
+const artwork = (song: Song) => song.thumb || '';
 
 export default function App() {
   const [tab, setTab] = useState(0);
+  const [pendingSearch, setPendingSearch] = useState('');
   const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
-  const onPlayed = useCallback((s: Song) => setRecent(r => [s, ...r.filter(x => x.videoId !== s.videoId)].slice(0, 40)), [setRecent]);
-  const p = usePlayer(settings.volume, settings.autoplay, onPlayed);
-  const likedIds = useMemo(() => new Set(liked.map(s => s.videoId)), [liked]);
-  const toggleLike = (s: Song) => setLiked(l => (l.some(x => x.videoId === s.videoId) ? l.filter(x => x.videoId !== s.videoId) : [s, ...l]));
-  useEffect(() => { document.documentElement.style.setProperty('--accent', settings.accent); }, [settings.accent]);
+  const [toast, setToast] = useState('');
+  const toastTimer = useRef<number | undefined>(undefined);
+  const onPlayed = useCallback((song: Song) => setRecent(items => [song, ...items.filter(item => item.videoId !== song.videoId)].slice(0, 50)), [setRecent]);
+  const player = usePlayer(settings.volume, settings.autoplay, onPlayed);
+  const likedIds = useMemo(() => new Set(liked.map(key)), [liked]);
+  const notify = useCallback((message: string) => {
+    setToast(message);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(''), 2600);
+  }, []);
+  const toggleLike = useCallback((song: Song) => {
+    setLiked(items => items.some(item => key(item) === key(song)) ? items.filter(item => key(item) !== key(song)) : [song, ...items]);
+  }, [setLiked]);
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', settings.accent);
+    return () => window.clearTimeout(toastTimer.current);
+  }, [settings.accent]);
   const navItems = useMemo(() => TABS.map(label => ({ label })), []);
-  const view = { play: p.play, liked: likedIds, toggleLike, currentId: p.current?.videoId, playing: p.playing };
+  const view: ViewProps = { play: player.play, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
+  const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
   return <div className="app">
-    <header className="top"><div className="brand"><span className="logo"><Icon d={I.music} size={18} /></span><span>Valotune</span></div><GooeyNav items={navItems} activeIndex={tab} onChange={i => setTab(i)} color={settings.accent} size="md" /><div className="top-spacer" /></header>
-    <main className="content">{tab === 0 && <Home {...view} />}{tab === 1 && <Discover {...view} />}{tab === 2 && <Library {...view} liked_list={liked} recent={recent} />}{tab === 3 && <SettingsView settings={settings} setSettings={s => { setSettings(s); if (s.volume !== settings.volume) p.setVolume(s.volume); }} clear={() => { setLiked([]); setRecent([]); }} />}</main>
-    <div className="yt-host" aria-hidden="true"><div ref={p.host} /></div>
-    <footer className="player">{p.current ? <>
-      <div className="np"><img src={p.current.thumb} alt="" /><div className="np-text"><b>{p.current.name}</b><span>{p.current.artist}</span></div><button className={`icon-btn ${likedIds.has(p.current.videoId) ? 'on' : ''}`} onClick={() => toggleLike(p.current!)} aria-label="Like"><Icon d={I.heart} fill={likedIds.has(p.current.videoId)} /></button></div>
-      <div className="controls"><div className="buttons"><button className="icon-btn" onClick={p.prev} aria-label="Previous"><Icon d={I.prev} fill /></button><button className="play-btn" onClick={p.toggle} aria-label={p.playing ? 'Pause' : 'Play'}><Icon d={p.playing ? I.pause : I.play} size={22} fill /></button><button className="icon-btn" onClick={p.next} aria-label="Next"><Icon d={I.next} fill /></button></div><Seek time={p.time} duration={p.duration} seek={p.seek} /></div>
-      <div className="vol"><ElasticSlider value={p.volume} onChange={v => { p.setVolume(v); setSettings(s => ({ ...s, volume: v })); }} valuePosition="none" maxStretch={24} ariaLabel="Volume" /></div>
-    </> : <div className="np-empty">Pick a song to start listening</div>}</footer>
+    <header className="top">
+      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo">♫</span><span>valo<span className="brand-light">tune</span></span></button>
+      <GooeyNav items={navItems} activeIndex={tab} onChange={setTab} color={settings.accent} />
+      <div className="top-status"><i /> REAL MUSIC. NO MOCKS.</div>
+    </header>
+    <main className="content" key={tab}>
+      {tab === 0 && <Home {...view} onExplore={term => { setPendingSearch(term); setTab(1); }} />}
+      {tab === 1 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
+      {tab === 2 && <Library {...view} likedList={liked} recent={recent} />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
+    </main>
+    <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>
+    {player.current && <footer className="player" aria-label="Music player">
+      <div className="np">
+        <img src={artwork(player.current)} alt="" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
+        <div className="np-text"><b title={player.current.name}>{player.current.name}</b><span>{player.current.artist}</span></div>
+        <button className={likedIds.has(player.current.videoId) ? 'icon-btn liked' : 'icon-btn'} onClick={() => toggleLike(player.current!)} aria-label={likedIds.has(player.current.videoId) ? 'Unlike song' : 'Like song'}>{likedIds.has(player.current.videoId) ? '♥' : '♡'}</button>
+      </div>
+      <div className="controls">
+        <div className="buttons">
+          <button className="icon-btn" onClick={player.prev} aria-label="Previous track">|◀</button>
+          <button className="play-btn" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? 'Ⅱ' : '▶'}</button>
+          <button className="icon-btn" onClick={player.next} aria-label="Next track">▶|</button>
+        </div>
+        <div className="seek"><span>{fmt(player.time)}</span><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /><span>{fmt(player.duration)}</span></div>
+      </div>
+      <div className="volume"><span aria-hidden="true">◖</span><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
+    </footer>}
+    <nav className="mobile-nav" aria-label="Mobile navigation">{TABS.map((label, index) => <button key={label} className={tab === index ? 'active' : ''} onClick={() => setTab(index)} aria-current={tab === index ? 'page' : undefined}><span>{['⌂', '⌕', '▤', '⚙'][index]}</span><small>{label}</small></button>)}</nav>
+    {toast && <div className="toast" role="status">{toast}</div>}
   </div>;
 }
 
-function Seek({ time, duration, seek }: { time: number; duration: number; seek: (t: number) => void }) {
-  const [drag, setDrag] = useState<number | null>(null);
-  const max = Math.max(1, duration);
-  return <div className="seek"><span>{fmt(drag ?? time)}</span><ElasticSlider value={Math.min(drag ?? time, max)} startingValue={0} maxValue={max} leftIcon={null} rightIcon={null} valuePosition="none" restOpacity={1} maxStretch={18} style={{ width: '100%' }} ariaLabel="Seek" formatValue={fmt} onChange={v => setDrag(v)} onChangeEnd={v => { seek(v); setDrag(null); }} /><span>{fmt(duration)}</span></div>;
-}
-interface ViewProps { play: (s: Song, l?: Song[]) => void; liked: Set<string>; toggleLike: (s: Song) => void; currentId?: string; playing: boolean; }
-function Row({ s, list, v, i }: { s: Song; list: Song[]; v: ViewProps; i?: number }) {
-  const on = v.currentId === s.videoId;
-  return <div className={`row ${on ? 'on' : ''}`} onDoubleClick={() => v.play(s, list)}><button className="row-play" onClick={() => v.play(s, list)} aria-label={`Play ${s.name}`}><img src={s.thumb} alt="" loading="lazy" /><span className="row-ov"><Icon d={on && v.playing ? I.pause : I.play} fill /></span></button><div className="row-text"><b>{i !== undefined ? `${i + 1}. ` : ''}{s.name}</b><span>{s.artist}</span></div><span className="row-dur">{s.duration ? fmt(s.duration) : ''}</span><button className={`icon-btn ${v.liked.has(s.videoId) ? 'on' : ''}`} onClick={() => v.toggleLike(s)} aria-label="Like"><Icon d={I.heart} size={18} fill={v.liked.has(s.videoId)} /></button></div>;
-}
-function Card({ s, list, v }: { s: Song; list: Song[]; v: ViewProps }) {
-  const on = v.currentId === s.videoId;
-  return <button className={`card ${on ? 'on' : ''}`} onClick={() => v.play(s, list)}><div className="card-art"><img src={s.thumb} alt="" loading="lazy" /><span className="card-play"><Icon d={on && v.playing ? I.pause : I.play} fill /></span></div><b>{s.name}</b><span>{s.artist}</span></button>;
-}
-const Empty = ({ text }: { text: string }) => <div className="empty">{text}</div>;
-
-function Home(v: ViewProps) {
-  const [data, setData] = useState<Section[] | null>(null);
-  const [err, setErr] = useState('');
-  useEffect(() => { api<Section[]>('/api/home').then(setData).catch(e => setErr(e.message)); }, []);
+function Home(v: ViewProps & { onExplore: (term: string) => void }) {
+  const [sections, setSections] = useState<Section[] | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    api<Section[]>('/api/home').then(data => { if (active) setSections(data); }).catch(e => { if (active) setError(e.message); });
+    return () => { active = false; };
+  }, []);
   const hour = new Date().getHours();
-  const hi = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  return <section><h1 className="hero">{hi}</h1><p className="sub">Fresh picks for you on Valotune.</p>{err && <Empty text={`Couldn't load music: ${err}. Is the server running?`} />}{!data && !err && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div key={i} className="sk" />)}</div>}{data?.map(sec => <div key={sec.title} className="shelf"><h2>{sec.title}</h2><div className="scroller">{sec.songs.map(s => <Card key={s.videoId} s={s} list={sec.songs} v={v} />)}</div></div>)}</section>;
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  return <section>
+    <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><div className="hero-note"><span>♫</span><b>Made for the moment</b><small>Discover something new today.</small></div></div>
+    {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home').then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
+    {!sections && !error && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div className="sk" key={i} />)}</div>}
+    {sections?.map(section => <Shelf key={section.title} section={section} {...v} />)}
+    <section className="genre-section"><div className="section-title"><div><small className="eyebrow">FOLLOW THE FEELING</small><h2>Explore by mood</h2></div></div><div className="genre-grid">{GENRES.map((genre, i) => <button key={genre} className={`genre genre-${i % 6}`} onClick={() => v.onExplore(genre + ' songs')}><span>{['✦','◉','☾','↗','♫','♡'][i % 6]}</span>{genre}<b>↗</b></button>)}</div></section>
+  </section>;
 }
 
-function Discover(v: ViewProps) {
-  const [q, setQ] = useState('');
-  const [sugg, setSugg] = useState<string[]>([]);
-  const [res, setRes] = useState<{ songs: Song[]; artists: Artist[] } | null>(null);
+function Shelf({ section, play, liked, toggleLike, currentId, playing }: { section: Section } & ViewProps) {
+  return <section className="shelf"><div className="section-title"><div><small className="eyebrow">CURATED FOR YOU</small><h2>{section.title}</h2></div><span>{section.songs.length} tracks</span></div><div className="scroller">{section.songs.map(song => <Card key={song.videoId} song={song} list={section.songs} play={play} liked={liked} toggleLike={toggleLike} currentId={currentId} playing={playing} />)}</div></section>;
+}
+function Card({ song, list, play, liked, toggleLike, currentId, playing }: { song: Song; list: Song[] } & ViewProps) {
+  const isCurrent = currentId === song.videoId;
+  return <article className={`card ${isCurrent ? 'is-current' : ''}`}>
+    <div className="cover-wrap"><button className="cover-button" onClick={() => play(song, list)} aria-label={`Play ${song.name}`}><img src={song.thumb} alt="" loading="lazy" onError={e => { e.currentTarget.style.opacity = '0'; }} /><span>{isCurrent && playing ? 'Ⅱ' : '▶'}</span></button><button className={liked.has(song.videoId) ? 'cover-like liked' : 'cover-like'} onClick={() => toggleLike(song)} aria-label={liked.has(song.videoId) ? 'Unlike song' : 'Like song'}>{liked.has(song.videoId) ? '♥' : '♡'}</button></div>
+    <button className="card-title" onClick={() => play(song, list)} title={song.name}>{song.name}</button><span className="card-artist">{song.artist}</span>
+  </article>;
+}
+
+function Discover(v: ViewProps & { notify: (message: string) => void; initialQuery: string }) {
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [result, setResult] = useState<SearchData | null>(null);
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-  const timer = useRef<number>();
-  const run = async (term: string) => {
-    const t = term.trim(); if (!t) return;
-    setQ(t); setSugg([]); setBusy(true); setErr('');
-    try { setRes(await api(`/api/search?q=${encodeURIComponent(t)}`)); } catch (e: any) { setErr(e.message); }
-    setBusy(false);
-  };
-  const onType = (val: string) => {
-    setQ(val); window.clearTimeout(timer.current); if (!val.trim()) return setSugg([]);
-    timer.current = window.setTimeout(() => { api<string[]>(`/api/suggest?q=${encodeURIComponent(val)}`).then(setSugg).catch(() => setSugg([])); }, 250);
-  };
-  return <section><h1 className="hero">Discover</h1><form className="search" onSubmit={e => { e.preventDefault(); run(q); }}><Icon d={I.search} /><input value={q} onChange={e => onType(e.target.value)} placeholder="Search songs, artists…" aria-label="Search" />{sugg.length > 0 && <ul className="sugg">{sugg.slice(0, 7).map(s => <li key={s}><button type="button" onClick={() => run(s)}>{s}</button></li>)}</ul>}</form>
-    {!res && !busy && <><h2>Browse genres</h2><div className="chips">{GENRES.map((g, i) => <button key={g} className="chip" style={{ ['--h' as any]: (i * 37) % 360 }} onClick={() => run(g + ' songs')}>{g}</button>)}</div></>}{busy && <Empty text="Searching…" />}{err && <Empty text={err} />}{res && !busy && <>{res.artists.length > 0 && <div className="shelf"><h2>Artists</h2><div className="scroller">{res.artists.map(a => <button key={a.name} className="artist" onClick={() => run(a.name)}><img src={a.thumb} alt="" /><span>{a.name}</span></button>)}</div></div>}<h2>Songs</h2>{res.songs.length === 0 && <Empty text="No songs found." />}<div className="list">{res.songs.map(s => <Row key={s.videoId} s={s} list={res.songs} v={v} />)}</div></>}</section>;
+  const [error, setError] = useState('');
+  const [filter, setFilter] = useState<'songs' | 'artists'>('songs');
+  const [recentTerms, setRecentTerms] = useState<string[]>([]);
+  const timer = useRef<number | undefined>(undefined);
+  const run = useCallback(async (term: string) => {
+    const value = term.trim();
+    if (!value) return;
+    setQuery(value); setSuggestions([]); setBusy(true); setError('');
+    try {
+      const data = await api<SearchData>('/api/search?q=' + encodeURIComponent(value));
+      setResult({ songs: data.songs || [], artists: data.artists || [] });
+      setRecentTerms(items => [value, ...items.filter(item => item.toLowerCase() !== value.toLowerCase())].slice(0, 6));
+    } catch (e) { setError(e instanceof Error ? e.message : 'Search failed.'); setResult(null); }
+    finally { setBusy(false); }
+  }, []);
+  useEffect(() => {
+    if (v.initialQuery) { setQuery(v.initialQuery); void run(v.initialQuery); }
+  }, [v.initialQuery, run]);
+  useEffect(() => {
+    window.clearTimeout(timer.current);
+    const value = query.trim();
+    if (value.length < 2) { setSuggestions([]); return; }
+    timer.current = window.setTimeout(() => { api<string[]>('/api/suggest?q=' + encodeURIComponent(value)).then(setSuggestions).catch(() => setSuggestions([])); }, 280);
+    return () => window.clearTimeout(timer.current);
+  }, [query]);
+  const songs = result?.songs || [];
+  return <section className="discover-page">
+    <small className="eyebrow">THE WORLD OF MUSIC</small><h1 className="page-heading">Find your <em>frequency.</em></h1><p className="sub">Search real tracks and artists. No placeholder playlists.</p>
+    <form className="search" role="search" onSubmit={e => { e.preventDefault(); void run(query); }}><span>⌕</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Songs, artists, albums, moods…" aria-label="Search music" /><button type="submit" disabled={busy}>{busy ? 'Searching…' : 'Search'}</button></form>
+    {suggestions.length > 0 && <div className="suggestions">{suggestions.map(item => <button key={item} onClick={() => void run(item)}>⌕ <span>{item}</span> ↗</button>)}</div>}
+    {recentTerms.length > 0 && <div className="recent-terms"><span>Recent searches</span>{recentTerms.map(term => <button key={term} onClick={() => void run(term)}>{term}</button>)}</div>}
+    {error && <div className="notice" role="alert">{error}<button onClick={() => void run(query)}>Retry</button></div>}
+    <div className="section-title results-heading"><div><small className="eyebrow">YOUR RESULTS</small><h2>{result ? `Results for “${query}”` : 'Start exploring'}</h2></div>{result && <span>{songs.length} songs · {result.artists.length} artists</span>}</div>
+    <div className="filter-tabs"><button className={filter === 'songs' ? 'active' : ''} onClick={() => setFilter('songs')}>Songs</button><button className={filter === 'artists' ? 'active' : ''} onClick={() => setFilter('artists')}>Artists</button></div>
+    {busy && <div className="skeleton-row">{Array.from({ length: 5 }, (_, i) => <div className="sk" key={i} />)}</div>}
+    {!busy && filter === 'songs' && songs.length > 0 && <div className="result-list">{songs.map(song => <div className="result-row" key={song.videoId}><button className="result-play" onClick={() => v.play(song, songs)} aria-label={`Play ${song.name}`}><img src={song.thumb} alt="" loading="lazy" /><span>{v.currentId === song.videoId && v.playing ? 'Ⅱ' : '▶'}</span></button><button className="result-info" onClick={() => v.play(song, songs)}><b>{song.name}</b><span>{song.artist}</span></button><span className="result-duration">{fmt(song.duration)}</span><button className={v.liked.has(song.videoId) ? 'icon-btn liked' : 'icon-btn'} onClick={() => v.toggleLike(song)} aria-label="Like song">{v.liked.has(song.videoId) ? '♥' : '♡'}</button></div>)}</div>}
+    {!busy && filter === 'artists' && (result?.artists.length ?? 0) > 0 && <div className="artist-grid">{result!.artists.map(artist => <button key={artist.name} onClick={() => void run(artist.name)}><img src={artist.thumb} alt="" loading="lazy" /><b>{artist.name}</b><span>Search artist tracks ↗</span></button>)}</div>}
+    {!busy && result && (filter === 'songs' ? songs.length === 0 : result.artists.length === 0) && <div className="empty"><span>♫</span><b>No {filter} found</b><p>Try a different title, artist, or spelling.</p></div>}
+    {!result && !busy && !error && <div className="discover-empty"><span>♫</span><b>What are you in the mood for?</b><p>Search above or pick a popular genre.</p><div>{GENRES.slice(0, 6).map(genre => <button key={genre} onClick={() => void run(genre + ' songs')}>{genre}</button>)}</div></div>}
+  </section>;
 }
 
-function Library({ liked_list, recent, ...v }: ViewProps & { liked_list: Song[]; recent: Song[] }) {
-  const [t, setT] = useState<'liked' | 'recent'>('liked');
-  const list = t === 'liked' ? liked_list : recent;
-  return <section><h1 className="hero">Library</h1><div className="seg"><button className={t === 'liked' ? 'on' : ''} onClick={() => setT('liked')}>Liked ({liked_list.length})</button><button className={t === 'recent' ? 'on' : ''} onClick={() => setT('recent')}>Recently played ({recent.length})</button></div>{list.length === 0 ? <Empty text={t === 'liked' ? 'Tap the heart on any song to save it here.' : 'Songs you play will show up here.'} /> : <><button className="btn" onClick={() => v.play(list[0], list)}><Icon d={I.play} size={16} fill /> Play all</button><div className="list">{list.map((s, i) => <Row key={s.videoId} s={s} list={list} v={v} i={i} />)}</div></>}</section>;
+function Library({ play, liked, toggleLike, currentId, playing, likedList, recent }: ViewProps & { likedList: Song[]; recent: Song[] }) {
+  const [mode, setMode] = useState<'liked' | 'recent'>('liked');
+  const songs = mode === 'liked' ? likedList : recent;
+  return <section className="library-page"><small className="eyebrow">YOUR PERSONAL COLLECTION</small><h1 className="page-heading">Your <em>library.</em></h1><p className="sub">Saved on this device, ready whenever you are.</p><div className="filter-tabs library-tabs"><button className={mode === 'liked' ? 'active' : ''} onClick={() => setMode('liked')}>Liked songs <span>{likedList.length}</span></button><button className={mode === 'recent' ? 'active' : ''} onClick={() => setMode('recent')}>Recently played <span>{recent.length}</span></button></div>
+    {songs.length ? <div className="result-list">{songs.map(song => <div className="result-row" key={song.videoId}><button className="result-play" onClick={() => play(song, songs)} aria-label={`Play ${song.name}`}><img src={song.thumb} alt="" loading="lazy" /><span>{currentId === song.videoId && playing ? 'Ⅱ' : '▶'}</span></button><button className="result-info" onClick={() => play(song, songs)}><b>{song.name}</b><span>{song.artist}</span></button><span className="result-duration">{fmt(song.duration)}</span>{mode === 'liked' && <button className="icon-btn liked" onClick={() => toggleLike(song)} aria-label="Remove from liked songs">♥</button>}</div>)}</div> : <div className="empty"><span>♫</span><b>{mode === 'liked' ? 'Your liked songs live here' : 'Nothing played yet'}</b><p>{mode === 'liked' ? 'Save tracks with the heart button and they will appear here.' : 'Play a song and it will show up in your listening history.'}</p></div>}
+  </section>;
 }
 
-function SettingsView({ settings, setSettings, clear }: { settings: Settings; setSettings: (s: Settings) => void; clear: () => void }) {
-  return <section className="settings"><h1 className="hero">Settings</h1><div className="panel"><div><b>Accent color</b><span>Changes the highlight across Valotune.</span></div><div className="swatches">{ACCENTS.map(c => <button key={c} className={settings.accent === c ? 'on' : ''} style={{ background: c }} onClick={() => setSettings({ ...settings, accent: c })} aria-label={`Accent ${c}`} />)}</div></div><div className="panel"><div><b>Default volume</b><span>{settings.volume}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={v => setSettings({ ...settings, volume: v })} valuePosition="none" ariaLabel="Default volume" /></div></div><div className="panel"><div><b>Autoplay next</b><span>Keep playing the queue when a song ends.</span></div><button className={`toggle ${settings.autoplay ? 'on' : ''}`} onClick={() => setSettings({ ...settings, autoplay: !settings.autoplay })} role="switch" aria-checked={settings.autoplay} aria-label="Autoplay"><i /></button></div><div className="panel"><div><b>Clear library</b><span>Removes liked songs and listening history from this browser.</span></div><button className="btn ghost" onClick={() => { if (confirm('Clear liked songs and history?')) clear(); }}>Clear</button></div><p className="about">Valotune · music data via YouTube Music (unofficial). For personal use.</p></section>;
+function SettingsView({ settings, setPreference, clear }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; clear: () => void }) {
+  return <section className="settings-page"><small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Your preferences stay in this browser.</p>
+    <div className="settings-group"><div className="settings-title"><h2>Appearance</h2><p>Choose the accent that feels right.</p></div><div className="panel"><div><b>Accent colour</b><span>Used across navigation and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div></div>
+    <div className="settings-group"><div className="settings-title"><h2>Playback</h2><p>Control how music behaves.</p></div><div className="panel"><div><b>Default volume</b><span>{settings.volume}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div><div className="panel"><div><b>Autoplay next</b><span>Continue to the next song when a track ends.</span></div><button className={`toggle ${settings.autoplay ? 'on' : ''}`} role="switch" aria-checked={settings.autoplay} onClick={() => setPreference('autoplay', !settings.autoplay)}><i /></button></div></div>
+    <div className="settings-group"><div className="settings-title"><h2>Library data</h2><p>Clear locally saved likes and listening history.</p></div><div className="panel"><div><b>Clear library</b><span>This does not affect music service data.</span></div><button className="btn ghost" onClick={() => { if (window.confirm('Clear liked songs and listening history from this browser?')) clear(); }}>Clear data</button></div></div>
+    <p className="about">ValoTune uses YouTube Music search and the YouTube player. Playback availability depends on YouTube, regional restrictions, and the track.</p>
+  </section>;
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import NyxMusicPlayer from "./components/NyxMusicPlayer.jsx";
 
 const initialSettings = { theme: "dark", accent: "lime", compact: false, volume: 70, reduceMotion: false, autoplayFull: false };
 const accents = { lime: "#d7f17b", violet: "#c7a7ff", blue: "#8fc9ff", coral: "#ffad99" };
@@ -56,7 +57,7 @@ export default function App() {
   const [track, setTrack] = useState(null);
   const [queue, setQueue] = useState([]);
   const [playing, setPlaying] = useState(false);
-  const [fullPlayer, setFullPlayer] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [resultTitle, setResultTitle] = useState("Pick a collection");
   const [filter, setFilter] = useState("all");
@@ -125,7 +126,7 @@ export default function App() {
     setPlaying(true);
     setDuration(0); setCurrentTime(0);
     setRecent(current => [song, ...current.filter(item => keyOf(item) !== keyOf(song))].slice(0, 50));
-    if (settings.autoplayFull) setFullPlayer(true);
+
   }, [collectionsState, results, settings.autoplayFull]);
   const playNext = useCallback((direction = 1) => {
     if (!queue.length) return;
@@ -186,25 +187,9 @@ export default function App() {
       <footer><span>VALOTUNE</span><span>GOOD MUSIC, RIGHT WHEN YOU NEED IT.</span><span>REACT UI · YOUTUBE MUSIC SEARCH</span></footer>
     </main>
 
-    {track && <aside className="player" aria-label="Music player">
-      <button className="player-now" onClick={() => setFullPlayer(true)}><span className="mini-cover">{track.thumbnail ? <img src={track.thumbnail} alt="" /> : "♫"}</span><span className="player-meta"><strong>{track.title}</strong><small>{track.artist}</small></span></button>
-      <button className={`like-button player-like ${isLiked(track) ? "is-liked" : ""}`} onClick={() => toggleLike(track)} aria-label={isLiked(track) ? "Unlike" : "Like"}>{isLiked(track) ? "♥" : "♡"}</button>
-      <div className="player-controls"><button className="mini-play" onClick={() => { sendPlayerCommand(playing ? "pauseVideo" : "playVideo"); setPlaying(!playing); }} aria-label={playing ? "Pause" : "Play"}>{playing ? "Ⅱ" : "▶"}</button></div>
-      <div className="mini-progress"><input type="range" min="0" max={Math.max(1, duration)} value={Math.min(currentTime, duration || 1)} onChange={e => { const seconds = Number(e.target.value); setCurrentTime(seconds); sendPlayerCommand("seekTo", [seconds, true]); }} aria-label="Track progress" /></div>
-    </aside>}
+    {track && <NyxMusicPlayer track={track} queue={queue} playing={playing} currentTime={currentTime} duration={duration} volume={settings.volume} liked={isLiked(track)} onLike={() => toggleLike(track)} onPlayPause={() => { sendPlayerCommand(playing ? "pauseVideo" : "playVideo"); setPlaying(!playing); }} onNext={() => playNext(1)} onPrevious={() => playNext(-1)} onSeek={seconds => { setCurrentTime(seconds); sendPlayerCommand("seekTo", [seconds, true]); }} onVolume={volume => { updateSetting("volume", volume); sendPlayerCommand("setVolume", [volume]); }} onSelect={song => playTrack(song, queue)} onShare={async () => { try { await navigator.share({title: track.title, text: track.artist, url: window.location.href}); } catch {} }} />}
 
     {track?.videoId && <iframe ref={iframeRef} className="audio-frame" title="YouTube audio playback" src={`https://www.youtube.com/embed/${encodeURIComponent(track.videoId)}?autoplay=1&enablejsapi=1&playsinline=1&controls=0&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media; picture-in-picture" />}
-    {fullPlayer && track && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setFullPlayer(false); }}><section className="full-player" role="dialog" aria-modal="true" aria-label="Now playing">
-      <div className="ambient-art" style={{backgroundImage: track.thumbnail ? `url("${track.thumbnail}")` : "none"}} />
-      <div className="full-player-top"><button className="player-down" onClick={() => setFullPlayer(false)} aria-label="Close player">⌄</button><span>NOW PLAYING</span><button className="player-options" onClick={() => notify("Playback options") } aria-label="More options">•••</button></div>
-      <div className="full-player-content"><div className="full-art">{track.thumbnail ? <img src={track.thumbnail} alt="" /> : "♫"}</div><div className="full-meta">
-        <div className="full-title-row"><div><h2>{track.title}</h2><p>{track.artist}</p></div><button className={`like-button ${isLiked(track) ? "is-liked" : ""}`} onClick={() => toggleLike(track)} aria-label={isLiked(track) ? "Unlike" : "Like"}>{isLiked(track) ? "♥" : "♡"}</button></div>
-        <div className="full-seek"><div><span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span></div><input type="range" min="0" max={Math.max(1, duration)} value={Math.min(currentTime, duration || 1)} onChange={e => { const seconds = Number(e.target.value); setCurrentTime(seconds); sendPlayerCommand("seekTo", [seconds, true]); }} aria-label="Seek track" /></div>
-        <div className="full-controls"><button className={shuffle ? "selected" : ""} onClick={() => setShuffle(!shuffle)} aria-label="Shuffle" aria-pressed={shuffle}>⤨</button><button onClick={() => playNext(-1)} aria-label="Previous track">|◀</button><button className="play-button" onClick={() => { sendPlayerCommand(playing ? "pauseVideo" : "playVideo"); setPlaying(!playing); }} aria-label={playing ? "Pause" : "Play"}>{playing ? "Ⅱ" : "▶"}</button><button onClick={() => playNext(1)} aria-label="Next track">▶|</button><button className={repeat ? "selected" : ""} onClick={() => setRepeat(!repeat)} aria-label="Repeat" aria-pressed={repeat}>↻</button></div>
-        <div className="volume-footer"><span>◖</span><input type="range" min="0" max="100" value={settings.volume} aria-label="Playback volume" onChange={e => { const volume = Number(e.target.value); updateSetting("volume", volume); sendPlayerCommand("setVolume", [volume]); }} /><span>◖))</span></div>
-        <div className="player-utilities"><button onClick={() => document.querySelector(".queue-heading")?.scrollIntoView({behavior:"smooth",block:"nearest"})}>☷ <span>Queue</span></button><button onClick={() => notify("Lyrics are not available for this track yet.")}>≋ <span>Lyrics</span></button><button onClick={async () => { try { await navigator.share({title: track.title, text: track.artist, url: window.location.href}); } catch {} }}>↗ <span>Share</span></button></div>
-        <div className="queue-heading"><h3>Up next</h3><span>{queue.length} tracks</span></div><div className="queue-list">{queue.slice(0, 8).map((song, i) => <button key={keyOf(song) + i} className={keyOf(song) === keyOf(track) ? "queue-item current" : "queue-item"} onClick={() => playTrack(song, queue)}><span>{song.thumbnail ? <img src={song.thumbnail} alt="" /> : "♫"}</span><span><strong>{song.title}</strong><small>{song.artist}</small></span>{keyOf(song) === keyOf(track) ? "♫" : "▶"}</button>)}</div>
-      </div></div></section></div>}
     <nav className="bottom-nav" aria-label="Main navigation">{[["home","⌂","Home"],["discover","⌕","Discover"],["library","▤","Library"],["settings","⚙","Settings"]].map(([item,icon,label]) => <button key={item} className={page === item ? "active" : ""} aria-current={page === item ? "page" : undefined} onClick={() => setPage(item)}><span aria-hidden="true">{icon}</span><small>{label}</small></button>)}</nav>
     {toast && <div className="toast" role="status">{toast}</div>}
   </div>;

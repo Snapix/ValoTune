@@ -257,3 +257,10 @@ body.compact-tracks .music-section{margin-top:18px}
 .track{backdrop-filter:blur(10px)}
 @media(max-width:720px){.track-carousel .track{flex-basis:43vw;min-width:158px}.mini-progress{gap:4px}.mini-progress span{font-size:9px}.full-cover{width:min(72vw,290px)}}
 @media(prefers-reduced-motion:reduce){.track-carousel .track,.genre-grid button{transition:none}}
+
+
+/* Keep the YouTube iframe active for playback without exposing video chrome */
+.full-video{position:absolute!important;width:1px!important;height:1px!important;left:-10000px!important;top:auto!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
+.full-video iframe{width:1px!important;height:1px!important;aspect-ratio:auto!important;border:0!important}
+#mini-player{cursor:pointer}
+#mini-scrubber{touch-action:pan-y}

@@ -161,7 +161,7 @@ export default function App() {
   return <div className={`app-shell ${settings.compact ? "compact" : ""}`}>
     <main className="main-shell">
       <header className="topbar">
-        <button className="brand" onClick={() => setPage("home")} aria-label="ValoTune home">valo<span>tune</span></button>
+        <button className="brand" onClick={() => setPage("home")} aria-label="Valomusic home">valo<span>music</span></button>
         <div className={`service-status ${health}`} title={health === "online" ? "Music service connected" : "Music service status"}><i />{health === "online" ? "Connected" : health === "offline" ? "Offline" : "Connecting"}</div>
       </header>
 
@@ -184,7 +184,7 @@ export default function App() {
         <div className="settings-group"><div className="settings-heading"><h2>Playback</h2><p>Control the listening experience.</p></div><label className="setting-row"><span><strong>Default volume</strong><small>Applies to the embedded player.</small></span><div className="volume-setting"><input className="volume-range" type="range" min="0" max="100" value={settings.volume} aria-label="Default volume" onChange={e => { const volume = Number(e.target.value); updateSetting("volume", volume); sendPlayerCommand("setVolume", [volume]); }} /><output>{settings.volume}%</output></div></label><label className="setting-row"><span><strong>Open full player when starting a track</strong><small>Open the expanded player automatically.</small></span><input type="checkbox" checked={settings.autoplayFull} onChange={e => updateSetting("autoplayFull", e.target.checked)} /></label></div>
         <div className="settings-group"><div className="settings-heading"><h2>Accessibility & data</h2><p>Manage motion and local data.</p></div><label className="setting-row"><span><strong>Reduce animations</strong><small>Use less motion throughout the interface.</small></span><input type="checkbox" checked={settings.reduceMotion} onChange={e => updateSetting("reduceMotion", e.target.checked)} /></label><div className="setting-row"><span><strong>Export library</strong><small>Download liked songs, history, and preferences.</small></span><button className="secondary" onClick={exportLibrary}>Export JSON</button></div><div className="setting-row"><span><strong>Clear local data</strong><small>Remove likes, history, and preferences.</small></span><button className="danger" onClick={clearData}>Clear data</button></div></div>
       </section>}
-      <footer><span>VALOTUNE</span><span>GOOD MUSIC, RIGHT WHEN YOU NEED IT.</span><span>REACT UI · YOUTUBE MUSIC SEARCH</span></footer>
+      <footer><span>VALOMUSIC</span><span>GOOD MUSIC, RIGHT WHEN YOU NEED IT.</span><span>REACT · YOUTUBE MUSIC</span></footer>
     </main>
 
     {track && <NyxMusicPlayer track={track} queue={queue} playing={playing} currentTime={currentTime} duration={duration} volume={settings.volume} liked={isLiked(track)} onLike={() => toggleLike(track)} onPlayPause={() => { sendPlayerCommand(playing ? "pauseVideo" : "playVideo"); setPlaying(!playing); }} onNext={() => playNext(1)} onPrevious={() => playNext(-1)} onSeek={seconds => { setCurrentTime(seconds); sendPlayerCommand("seekTo", [seconds, true]); }} onVolume={volume => { updateSetting("volume", volume); sendPlayerCommand("setVolume", [volume]); }} onSelect={song => playTrack(song, queue)} onShare={async () => { try { await navigator.share({title: track.title, text: track.artist, url: window.location.href}); } catch {} }} />}

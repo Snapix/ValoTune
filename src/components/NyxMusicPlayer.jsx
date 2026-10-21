@@ -58,8 +58,9 @@ export default function NyxMusicPlayer({
         <input
           ref={seekRef} type="range" min="0" max={maxTime || 1} step="0.1"
           value={Math.min(shownTime, maxTime || 1)} disabled={!maxTime}
+          style={{ "--seek-progress": `${maxTime > 0 ? (shownTime / maxTime) * 100 : 0}%` }}
           onPointerDown={beginSeek} onChange={previewSeek} onPointerUp={commitSeek}
-          onPointerCancel={cancelSeek} onLostPointerCapture={() => { if (seeking) commitSeek(); }}
+          onPointerCancel={cancelSeek} onLostPointerCapture={cancelSeek}
           onKeyDown={event => { if (!seeking && ["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(event.key)) beginSeek(); }}
           onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(event.key)) commitSeek(); }}
           onBlur={() => { if (seeking) commitSeek(); }}

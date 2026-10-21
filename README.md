@@ -1,16 +1,14 @@
-# Valomusic
+# Valotune
 
-Responsive music discovery app built with HTML, CSS, JavaScript, Express, and the unofficial `ytmusic-api` package.
+Music streaming web app: Home, Discover, Library, Settings.
+React + Vite frontend, small Express API using `ytmusic-api`, playback via the YouTube IFrame player.
+UI uses React Bits `GooeyNav` (navigation) and `ElasticSlider` (seek + volume).
 
-## Run locally
-Requires Node.js 18+.
-
-```sh
-npm install
-npm start
+## Run
 ```
+npm install
+npm run dev        # API on :3001, app on http://localhost:5173
+```
+Production: `npm run build && npm start` (serves dist + API on :3001).
 
-Open http://localhost:3000.
-
-## Notes
-`ytmusic-api` is an unofficial metadata scraper, not an official streaming API. Playback uses YouTube embeds. This app is a regular Express server; Vercel deployment may require adapting it to serverless functions.
+Liked songs, history and settings are stored in the browser (localStorage).

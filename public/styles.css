@@ -214,3 +214,46 @@ body.compact-tracks .music-section{margin-top:18px}
 @media(prefers-reduced-motion:reduce){.elastic-slider *{transition:none!important;animation:none!important}}
 
 .full-video{width:100%;margin-top:12px}.full-video iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#090a08}
+
+
+/* Music-first browsing and player refinements */
+.track-carousel{display:flex;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding:4px 2px 14px;scrollbar-width:none}
+.track-carousel::-webkit-scrollbar{display:none}
+.track-carousel .track{flex:0 0 clamp(190px,22vw,245px);display:grid;grid-template-columns:1fr auto;gap:9px;padding:10px;border:1px solid var(--line);border-radius:14px;background:rgba(22,23,20,.72);scroll-snap-align:start;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.track-carousel .track-num{display:none}
+.track-carousel .track-main{grid-column:1/-1;display:grid;gap:10px;min-width:0}
+.track-carousel .track-cover{width:100%;aspect-ratio:1/1;height:auto;border-radius:10px;overflow:hidden}
+.track-carousel .track-cover img,.track-cover img,.cover img,.full-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.track-carousel .track-info{min-width:0}
+.track-carousel .track-info strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-carousel .track>button{border-radius:50%;min-width:34px;min-height:34px}
+.track-carousel .track>button[data-play]{background:var(--accent);color:#151611;border:0}
+.genre-grid button{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,var(--panel)),rgba(25,26,23,.94));border-color:color-mix(in srgb,var(--accent) 24%,var(--line));transition:transform .2s,border-color .2s,background .2s}
+.genre-grid button:hover,.genre-grid button:focus-visible{transform:translateY(-2px);border-color:var(--accent)}
+.player{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(17,18,15,.9);border-top:1px solid rgba(255,255,255,.08)}
+.player::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--accent) var(--play-progress,0%),transparent var(--play-progress,0%));pointer-events:none}
+.cover{width:40px;height:40px;flex:0 0 40px;border-radius:8px;overflow:hidden}
+.now-meta{min-width:0}
+.now-meta strong,.now-meta small{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-meta strong{font-size:13px}
+.mini-progress{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mini-progress input,.full-progress input{width:100%;accent-color:var(--accent);cursor:pointer;height:16px;min-width:0}
+.full-progress{width:min(100%,460px);margin:22px auto 12px}
+.full-time{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.full-cover{aspect-ratio:1/1;width:min(68vw,320px);height:auto;overflow:hidden;border-radius:18px;box-shadow:0 22px 70px rgba(0,0,0,.38)}
+.full-cover img{border-radius:inherit}
+.full-player{background:rgba(10,11,9,.97);backdrop-filter:blur(20px)}
+.full-player__content{align-items:center}
+.full-extras{display:flex;justify-content:center;gap:8px;margin:12px auto}
+.full-extras button[aria-pressed=true],.full-extras button.selected{color:var(--accent);border-color:var(--accent)}
+.queue-panel{width:min(100%,460px);max-height:180px;overflow:auto;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;background:rgba(22,23,20,.9)}
+.queue-panel button{width:100%;display:grid;grid-template-columns:28px 1fr;gap:2px 8px;text-align:left;padding:10px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--cream)}
+.queue-panel button span{grid-row:span 2;color:var(--muted)}
+.queue-panel button strong,.queue-panel button small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue-panel button small{color:var(--muted)}
+.queue-panel button.selected{color:var(--accent)}
+.track-info strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-cover{aspect-ratio:1/1;overflow:hidden}
+.track{backdrop-filter:blur(10px)}
+@media(max-width:720px){.track-carousel .track{flex-basis:43vw;min-width:158px}.mini-progress{gap:4px}.mini-progress span{font-size:9px}.full-cover{width:min(72vw,290px)}}
+@media(prefers-reduced-motion:reduce){.track-carousel .track,.genre-grid button{transition:none}}

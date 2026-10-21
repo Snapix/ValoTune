@@ -16,7 +16,7 @@ function squareThumbnail(url) { return String(url || "").replace(/=w\d+-h\d+[^&]
 
 const music = new YTMusic();
 let initPromise;
-app.use(express.static(path.join(root, "public")));
+app.use(express.static(path.join(root, "dist")));
 async function initMusic() { if (!initPromise) initPromise = music.initialize(); await initPromise; }
 app.get("/api/health", (_req, res) => res.json({ ok: true, service: "ValoTune" }));
 app.get("/api/search", async (req, res) => {
@@ -38,5 +38,5 @@ app.get("/api/search", async (req, res) => {
     res.status(502).json({ error: "YouTube Music search is unavailable. Try again shortly." });
   }
 });
-app.get("*", (_req, res) => res.sendFile(path.join(root, "public", "index.html")));
+app.get("*", (_req, res) => res.sendFile(path.join(root, "dist", "index.html")));
 app.listen(port, () => console.log(`ValoTune running on port ${port}`));

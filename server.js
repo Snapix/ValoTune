@@ -5,6 +5,15 @@ import YTMusic from "ytmusic-api";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3000;
+const TITLE_NOISE = /\b(?:official\s+(?:music\s+)?video|official\s+audio|lyrics?|lyric\s+video|hd\s+remaster(?:ed)?|visuali[sz]er|music\s+video|with\s+lyrics)\b/gi;
+const COMPILATION_NOISE = /\b(?:top\s*\d+|best\s+global\s+hits?|trending\s+songs?|top\s+songs?|top\s+music|playlist|compilation|nonstop|mega\s+hits?|hits?\s+202[0-9]|songs?\s+202[0-9])\b/gi;
+function cleanTitle(value) {
+  const original = String(value || "Untitled").normalize("NFKC");
+  const cleaned = original.replace(TITLE_NOISE, " ").replace(COMPILATION_NOISE, " ").replace(/\b(?:19|20)\d{2}\b/g, " ").replace(/[🎵🎶🎧🌍🔥✨💥💯❤️💕🎤📀🔊▶️]/gu, " ").replace(/[|~•·]+/g, " ").replace(/\s+/g, " ").replace(/^[-–—:,. \s]+|[-–—:,. \s]+$/g, "").trim();
+  return cleaned || original.trim();
+}
+function squareThumbnail(url) { return String(url || "").replace(/=w\d+-h\d+[^&]*/i, "=w800-h800-l90-rj").replace(/=s\d+[^&]*/i, "=w800-h800-l90-rj"); }
+
 const music = new YTMusic();
 let initPromise;
 app.use(express.static(path.join(root, "public")));
@@ -19,9 +28,9 @@ app.get("/api/search", async (req, res) => {
     const items = await music.search(q);
     res.json({ results: (Array.isArray(items) ? items : []).map((item, i) => ({
       id: item.videoId || item.browseId || `${q}-${i}`, videoId: item.videoId || "",
-      title: item.name || item.title || "Untitled",
+      title: cleanTitle(item.name || item.title || "Untitled"),
       artist: (Array.isArray(item.artists) ? item.artists.map(a => typeof a === "string" ? a : a?.name).filter(Boolean).join(", ") : "") || (typeof item.artist === "string" ? item.artist : (item.artist?.name && !/^\d{1,2}:\d{2}$/.test(item.artist.name) ? item.artist.name : "")) || (typeof item.author === "string" ? item.author : item.author?.name) || "YouTube Music",
-      album: item.album?.name || item.album || "", thumbnail: item.thumbnails?.at(-1)?.url || "",
+      album: item.album?.name || item.album || "", thumbnail: squareThumbnail(item.thumbnails?.at(-1)?.url || item.thumbnails?.[0]?.url || ""),
       type: item.type || "song", duration: item.duration || null
     })) });
   } catch (error) {

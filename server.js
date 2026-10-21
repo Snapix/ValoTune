@@ -18,7 +18,7 @@ const music = new YTMusic();
 let initPromise;
 app.use(express.static(path.join(root, "dist")));
 async function initMusic() { if (!initPromise) initPromise = music.initialize(); await initPromise; }
-app.get("/api/health", (_req, res) => res.json({ ok: true, service: "ValoTune" }));
+app.get("/api/health", (_req, res) => res.json({ ok: true, service: "Valomusic" }));
 app.get("/api/search", async (req, res) => {
   const q = String(req.query.q || "").trim();
   if (!q) return res.status(400).json({ error: "Enter a song, artist, album, or playlist." });
@@ -41,4 +41,4 @@ app.get("/api/search", async (req, res) => {
 app.get("*", (_req, res) => res.sendFile(path.join(root, "dist", "index.html")));
 export default app;
 
-if (!process.env.VERCEL) app.listen(port, () => console.log(`ValoTune running on port ${port}`));
+if (!process.env.VERCEL) app.listen(port, () => console.log(`Valomusic running on port ${port}`));

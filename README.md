@@ -1,4 +1,4 @@
-# ValoTune
+# Valomusic
 
 Responsive music discovery app built with HTML, CSS, JavaScript, Express, and the unofficial `ytmusic-api` package.
 

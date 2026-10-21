@@ -70,3 +70,19 @@ $("#shuffle-toggle")?.addEventListener("click",e=>{shuffleEnabled=!shuffleEnable
 $("#repeat-toggle")?.addEventListener("click",e=>{repeatEnabled=!repeatEnabled;e.currentTarget.setAttribute("aria-pressed",String(repeatEnabled));e.currentTarget.classList.toggle("selected",repeatEnabled)});
 $("#queue-toggle")?.addEventListener("click",()=>{const panel=$("#queue-panel");panel.hidden=!panel.hidden;panel.innerHTML=state.queue.length?state.queue.map((track,i)=>'<button type="button" data-queue-index="'+i+'" class="'+(i===state.index?"selected":"")+'"><span>'+String(i+1).padStart(2,"0")+'</span><strong>'+esc(track.title)+'</strong><small>'+esc(track.artist)+'</small></button>').join(""):'<p>No tracks in queue.</p>'});
 document.addEventListener("click",e=>{const item=e.target.closest("[data-queue-index]");if(item)play(state.queue[Number(item.dataset.queueIndex)],state.queue)});
+
+
+/* Keyboard shortcuts scoped to the focused player, as in the Nyx player pattern. */
+document.addEventListener("keydown",e=>{
+  const inPlayer=!!e.target.closest?.("#mini-player, #full-player");
+  if(!inPlayer||e.altKey||e.ctrlKey||e.metaKey)return;
+  if(["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName))return;
+  if(e.key===" "){e.preventDefault();if(state.queue.length)setPlaying(!state.playing)}
+  else if(e.key==="ArrowLeft"||e.key==="ArrowRight"){
+    if(!playbackDuration)return;
+    e.preventDefault();playbackTime=Math.max(0,Math.min(playbackDuration,playbackTime+(e.key==="ArrowRight"?10:-10)));paintProgress();
+    $("#yt-frame")?.contentWindow?.postMessage(JSON.stringify({event:"command",func:"seekTo",args:[playbackTime,true]}),"*");
+  }else if(e.key==="ArrowUp"||e.key==="ArrowDown"){
+    e.preventDefault();setVolume(Math.max(0,Math.min(100,state.settings.volume+(e.key==="ArrowUp"?5:-5))));saveSettings();
+  }
+});

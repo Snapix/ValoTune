@@ -39,4 +39,6 @@ app.get("/api/search", async (req, res) => {
   }
 });
 app.get("*", (_req, res) => res.sendFile(path.join(root, "dist", "index.html")));
-app.listen(port, () => console.log(`ValoTune running on port ${port}`));
+export default app;
+
+if (!process.env.VERCEL) app.listen(port, () => console.log(`ValoTune running on port ${port}`));

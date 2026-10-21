@@ -181,8 +181,6 @@ body.compact-tracks .music-section{margin-top:18px}
 @media(prefers-reduced-motion:reduce){.volume input[type=range]::-webkit-slider-runnable-track,.setting-volume input[type=range]::-webkit-slider-runnable-track,.full-volume input[type=range]::-webkit-slider-runnable-track{transition:none}}
 
 /* Elastic volume control, tuned for ValoTune and reduced-motion preferences. */
-#youtube{position:fixed!important;width:1px!important;height:1px!important;left:-10000px!important;top:0!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important}
-#youtube iframe{width:1px!important;height:1px!important;border:0!important;opacity:0!important;pointer-events:none!important}
 .elastic-slider{display:flex;align-items:center;gap:9px;width:clamp(110px,13vw,170px);color:var(--cream);user-select:none;-webkit-user-select:none;touch-action:pan-y}
 .elastic-slider__icon{display:grid;place-items:center;color:var(--muted);font-size:17px;line-height:1;flex:0 0 auto;transition:transform .25s cubic-bezier(.2,.8,.2,1),color .2s}
 .elastic-slider__hit{position:relative;display:flex;align-items:center;flex:1;min-width:0;height:38px;outline:none;cursor:grab;touch-action:none}
@@ -214,3 +212,5 @@ body.compact-tracks .music-section{margin-top:18px}
 @media(max-width:1050px){.volume{display:flex}.elastic-slider{width:clamp(95px,14vw,145px)}}
 @media(max-width:720px){.volume{display:none}.setting-volume .elastic-slider{width:125px}.full-volume .elastic-slider{width:auto}.search-entity__cover{width:46px;height:46px}.search-entity{gap:10px}.search-entity>button{padding:7px 8px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.elastic-slider *{transition:none!important;animation:none!important}}
+
+.full-video{width:100%;margin-top:12px}.full-video iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#090a08}

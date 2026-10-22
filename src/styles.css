@@ -150,3 +150,19 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 }
 .app[data-theme="light"] .top{background:rgba(250,250,253,.94)}
 @media(prefers-color-scheme:light){.app[data-theme="system"] .top{background:rgba(250,250,253,.94)}}
+
+/* Fullscreen lyrics: synchronized, scrollable, and responsive below playback controls. */
+.lyrics-panel{width:100%;margin-top:8px;padding-top:20px;border-top:1px solid var(--line);min-width:0}
+.lyrics-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.lyrics-heading small{font-size:10px;letter-spacing:.16em;font-weight:800;color:var(--accent)}
+.lyrics-heading h2{margin:4px 0 0;font-size:22px;letter-spacing:-.035em}
+.lyrics-heading>span{border:1px solid var(--line);border-radius:999px;padding:6px 9px;color:var(--muted);font-size:10px;white-space:nowrap}
+.lyrics-state{padding:18px 0;color:var(--muted);font-size:13px;line-height:1.6}
+.lyrics-state p{margin:0 0 8px}
+.lyrics-retry{border:1px solid var(--line-strong);border-radius:999px;padding:7px 12px;background:#ffffff08;color:var(--ink);font-size:12px}
+.lyrics-lines{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-height:min(46vh,440px);overflow-y:auto;overscroll-behavior:contain;padding:12px 4px 18px 0;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.lyrics-line{width:100%;border:0;border-radius:10px;background:transparent;color:color-mix(in srgb,var(--muted) 86%,transparent);padding:8px 10px;text-align:left;font-size:clamp(16px,2.2vw,20px);font-weight:650;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;transition:color .22s,background .22s,transform .22s}
+.lyrics-line.is-current{color:var(--ink);background:color-mix(in srgb,var(--accent) 13%,transparent);transform:translateX(3px)}
+.lyrics-credit{margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.5;opacity:.8}
+@media(max-width:620px){.lyrics-panel{margin-top:0;padding-top:16px}.lyrics-heading h2{font-size:20px}.lyrics-lines{max-height:38vh}.lyrics-line{font-size:16px;padding:8px}.fullscreen-inner{width:100%;gap:18px}}
+@media(prefers-reduced-motion:reduce){.lyrics-line{transition:none}}

@@ -166,3 +166,5 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 .lyrics-credit{margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.5;opacity:.8}
 @media(max-width:620px){.lyrics-panel{margin-top:0;padding-top:16px}.lyrics-heading h2{font-size:20px}.lyrics-lines{max-height:38vh}.lyrics-line{font-size:16px;padding:8px}.fullscreen-inner{width:100%;gap:18px}}
 @media(prefers-reduced-motion:reduce){.lyrics-line{transition:none}}
+
+.blur-text-pieces{display:inline}.blur-text-piece{will-change:transform,filter,opacity}.lyrics-line-text{margin:0;display:block;width:100%;font:inherit;line-height:inherit;color:inherit}.lyrics-line-text .blur-text-pieces{display:inline}

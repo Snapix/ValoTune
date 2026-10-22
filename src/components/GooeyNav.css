@@ -1,1 +1,24 @@
-.gooey-nav{display:flex;align-items:center;gap:4px;padding:5px;border:1px solid var(--line);border-radius:999px;background:var(--panel);max-width:100%}.gooey-nav button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:10px 17px;font-size:13px;white-space:nowrap;transition:background .18s,color .18s}.gooey-nav button:hover{color:var(--ink)}.gooey-nav button.is-active{background:var(--nav-accent);color:#fff;box-shadow:0 5px 20px color-mix(in srgb,var(--nav-accent) 30%,transparent)}.gooey-nav--sm button{padding:7px 12px}.gooey-nav--lg button{padding:12px 20px}@media(max-width:620px){.gooey-nav{width:100%;justify-content:space-between}.gooey-nav button{flex:1;padding:10px 7px;font-size:12px}}
+.gooey-nav{
+  --gn-pad:6px;--gn-gap:4px;--gn-font:13px;--gn-x:17px;--gn-y:10px;
+  position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:var(--gn-gap);
+  max-width:100%;font-size:var(--gn-font);line-height:1.2;white-space:nowrap;
+}
+.gooey-nav--sm{--gn-pad:4px;--gn-gap:3px;--gn-font:12px;--gn-x:13px;--gn-y:8px}
+.gooey-nav--lg{--gn-pad:7px;--gn-gap:5px;--gn-font:15px;--gn-x:20px;--gn-y:12px}
+.gooey-nav--framed{padding:var(--gn-pad);border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--panel) 80%,transparent);box-shadow:inset 0 1px 0 #ffffff0a,0 8px 26px #0002;-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
+.gooey-nav button{position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:var(--gn-y) var(--gn-x);border:1px solid transparent;border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-weight:650;white-space:nowrap;cursor:pointer;transition:color .2s ease,transform .3s cubic-bezier(.2,.8,.2,1);-webkit-tap-highlight-color:transparent}
+.gooey-nav button:hover{color:var(--ink);transform:translateY(-1px)}
+.gooey-nav button.is-active{color:#fff}
+.gooey-nav button:focus-visible{outline:2px solid var(--nav-accent);outline-offset:3px}
+.gooey-nav__pill{position:absolute;z-index:1;left:0;top:0;width:var(--gn-pill-w);height:var(--gn-pill-h);transform:translate3d(var(--gn-pill-x),var(--gn-pill-y),0);border-radius:999px;background:var(--nav-accent);opacity:1;pointer-events:none;transition:transform var(--gn-duration) cubic-bezier(.2,1.3,.35,1),width var(--gn-duration) cubic-bezier(.2,1.3,.35,1),height var(--gn-duration) ease;box-shadow:0 4px 14px color-mix(in srgb,var(--nav-accent) 22%,transparent);filter:url(#gooey-nav-filter)}
+.gooey-nav__pill:after{content:"";position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(180deg,#ffffff20,transparent 75%);opacity:.8}
+.gooey-nav__hover{position:absolute;z-index:0;top:var(--gn-y);left:var(--gn-hover-x);width:0;height:0;border-radius:999px;background:#ffffff0a;pointer-events:none;transition:width .2s,height .2s}
+.gooey-nav__spark{position:absolute;z-index:1;left:calc(var(--gn-pill-x) + var(--gn-pill-w)/2);top:calc(var(--gn-pill-y) + var(--gn-pill-h)/2);width:4px;height:4px;border-radius:50%;background:var(--nav-accent);opacity:0;pointer-events:none}
+.gooey-nav__spark--one{--spark-angle:-55deg}
+.gooey-nav__spark--two{--spark-angle:35deg}
+.gooey-nav:has(button:active) .gooey-nav__spark{animation:gooey-spark .48s ease-out}
+.gooey-nav__filter{position:absolute;width:0;height:0;overflow:hidden}
+@keyframes gooey-spark{0%{opacity:0;transform:translate(0,0) scale(.5)}20%{opacity:.85}100%{opacity:0;transform:translate(calc(cos(var(--spark-angle))*var(--gn-spread)*.25),calc(sin(var(--spark-angle))*var(--gn-spread)*.25)) scale(0)}}
+@media(max-width:900px){.gooey-nav{gap:2px}.gooey-nav button{--gn-x:12px;--gn-y:9px}}
+@media(max-width:620px){.gooey-nav{display:flex;width:100%;justify-content:space-between;gap:2px;padding:4px}.gooey-nav button{flex:1;min-width:0;padding:9px 5px;font-size:11px}.gooey-nav__pill{max-width:calc(100% - 8px)}}
+@media(prefers-reduced-motion:reduce){.gooey-nav *, .gooey-nav *:before,.gooey-nav *:after{animation:none!important;transition:none!important}}

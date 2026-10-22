@@ -32,3 +32,37 @@
 @media(max-width:1024px){.player .volume{display:none}}
 @media(max-width:639px){.player{gap:8px}.player .np{min-width:0}.player .np>img{width:42px;height:42px;flex-basis:42px}.player .controls{min-width:0}.player .buttons{gap:4px}.player-control{width:44px;height:44px;flex-basis:44px}.player .play-btn{width:44px;height:44px}.player .seek{gap:5px}.player .seek span{font-size:9px}.fullscreen-player{align-items:flex-start;padding:calc(72px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom))}.fullscreen-inner{gap:20px;padding-top:0}.fullscreen-artwork{width:min(100%,42vh);border-radius:18px}.fullscreen-track h1{font-size:24px}.fullscreen-controls{gap:20px}.fullscreen-icon{width:52px;height:52px}.fullscreen-play{width:64px;height:64px}.fullscreen-close span{display:none}.fullscreen-close{width:44px;justify-content:center;padding:0}}
 @media(prefers-reduced-motion:reduce){.fullscreen-player{animation:none}}
+
+
+/* Practical glow audit: retain restrained depth, but remove the oversized neon shadows and background bloom. */
+body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 72% -12%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 68%))}
+.app[data-ambient="false"]{--page-ambient:none}
+.logo{box-shadow:0 2px 9px color-mix(in srgb,var(--accent) 14%,transparent)}
+.cover-button{box-shadow:0 3px 12px #0002}
+.cover-button>span{box-shadow:0 2px 8px #0003}
+.fullscreen-player{background:radial-gradient(ellipse at 50% 12%,color-mix(in srgb,var(--accent) 9%,#17141f),rgba(13,11,18,.985) 62%);backdrop-filter:blur(12px)}
+.fullscreen-artwork{box-shadow:0 12px 32px #0005}
+.search{box-shadow:0 5px 18px #0002}
+.toast{box-shadow:0 5px 18px #0004}
+.app[data-player-layout="compact"] .player{min-height:72px;padding-top:7px;padding-bottom:calc(7px + env(safe-area-inset-bottom))}
+.app[data-player-layout="compact"] .np>img{width:42px;height:42px;flex-basis:42px}
+.app[data-player-layout="compact"] .player .play-btn{width:32px;height:32px}
+.app[data-player-layout="compact"] .player-control{width:38px;height:38px;flex-basis:38px}
+.app[data-player-layout="compact"] .controls{gap:3px}
+.app[data-player-layout="compact"] .player{gap:16px}
+.settings-select{min-width:120px;max-width:48%;padding:9px 30px 9px 11px;border:1px solid var(--line-strong);border-radius:10px;background:var(--panel);color:var(--ink)}
+.settings-select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.app[data-nav-labels="false"] .mobile-nav button small{display:none}
+.app[data-nav-labels="false"] .mobile-nav button{padding:7px 4px}
+.app[data-reduce-motion="true"] *, .app[data-reduce-motion="true"] *::before, .app[data-reduce-motion="true"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.app[data-theme="light"]{--bg:#f5f5f8;--panel:#fff;--panel2:#ececf2;--line:rgba(24,20,34,.1);--line-strong:rgba(24,20,34,.18);--ink:#211d2b;--muted:rgba(33,29,43,.62);color:var(--ink)}
+.app[data-theme="light"] body,.app[data-theme="light"]{background:var(--bg);color:var(--ink)}
+.app[data-theme="light"] .top{background:rgba(250,250,253,.92);border-bottom-color:var(--line)}
+.app[data-theme="light"] .player{background:rgba(255,255,255,.96)}
+.app[data-theme="light"] .mobile-nav{background:rgba(255,255,255,.97)}
+.app[data-theme="light"] .fullscreen-player{background:radial-gradient(ellipse at 50% 12%,color-mix(in srgb,var(--accent) 7%,#fff),rgba(247,247,251,.99) 62%)}
+.app[data-theme="light"] .fullscreen-close{background:#00000005}
+.app[data-theme="light"] .fullscreen-play,.app[data-theme="light"] .play-btn{background:#211d2b;color:#fff}
+.app[data-theme="light"] .cover-button,.app[data-theme="light"] .np>img{background:#e7e6ed}
+@media(prefers-color-scheme:light){.app[data-theme="system"]{--bg:#f5f5f8;--panel:#fff;--panel2:#ececf2;--line:rgba(24,20,34,.1);--line-strong:rgba(24,20,34,.18);--ink:#211d2b;--muted:rgba(33,29,43,.62);color:var(--ink)}.app[data-theme="system"] .top{background:rgba(250,250,253,.92);border-bottom-color:var(--line)}.app[data-theme="system"] .player{background:rgba(255,255,255,.96)}.app[data-theme="system"] .mobile-nav{background:rgba(255,255,255,.97)}.app[data-theme="system"] .fullscreen-player{background:radial-gradient(ellipse at 50% 12%,color-mix(in srgb,var(--accent) 7%,#fff),rgba(247,247,251,.99) 62%)}.app[data-theme="system"] .fullscreen-play,.app[data-theme="system"] .play-btn{background:#211d2b;color:#fff}}
+@media(max-width:620px){.app[data-player-layout="compact"] .player{min-height:100px}.app[data-player-layout="compact"] .player .np>img{width:36px;height:36px;flex-basis:36px}.app[data-player-layout="compact"] .player .play-btn{width:36px;height:36px}.app[data-player-layout="compact"] .player-control{width:36px;height:36px;flex-basis:36px}}

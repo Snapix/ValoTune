@@ -1,7 +1,7 @@
-import type { SVGProps } from 'react';
+import type { ReactNode, SVGProps } from 'react';
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
-function IconBase({ size = 20, children, ...props }: IconProps & { children: React.ReactNode }) {
+function IconBase({ size = 20, children, ...props }: IconProps & { children: ReactNode }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" focusable="false" {...props}>{children}</svg>;
 }
 export function PlayIcon(props: IconProps) { return <IconBase {...props}><path d="M8 5.14v13.72c0 .78.85 1.26 1.52.85l10.3-6.86a1.02 1.02 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" /></IconBase>; }

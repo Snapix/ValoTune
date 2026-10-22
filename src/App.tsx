@@ -316,13 +316,20 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
     return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
   }, [record]);
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
+  const formatLyricTimestamp = (seconds: number) => {
+    const total = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const remainder = total % 60;
+    return [hours, minutes, remainder].map(value => String(value).padStart(2, '0')).join(':');
+  };
   useEffect(() => { activeLine.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [currentLine]);
   return <section className="lyrics-panel" aria-label="Song lyrics">
     <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
     {status === 'error' && <div className="lyrics-state"><p>Lyrics couldn’t be loaded right now.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
     {status === 'empty' && <div className="lyrics-state">{record?.instrumental ? 'This track is marked as instrumental.' : 'No lyrics found for this track.'}</div>}
-    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')}><BlurText text={line.text} effect="drift" animateBy="words" direction="left" staggerFrom="random" trigger="view" delay={110} stepDuration={0.5} blur={12} distance={70} focusOnHover className="lyrics-line-text" /></div>)}</div>}
+    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')}>{line.time !== null && <span className="lyrics-timestamp" aria-label={'Timestamp ' + formatLyricTimestamp(line.time)}>{formatLyricTimestamp(line.time)}</span>}<BlurText text={line.text} effect="drift" animateBy="words" direction="left" staggerFrom="start" trigger="view" delay={75} stepDuration={0.42} blur={8} distance={28} className="lyrics-line-text" /></div>)}</div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

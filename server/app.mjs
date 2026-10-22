@@ -48,6 +48,23 @@ function normalizeSong(song) {
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'valotune-api' }));
 
+app.get('/api/lyrics', async (req, res) => {
+  const videoId = String(req.query.videoId || '').trim().slice(0, 32);
+  if (!videoId) return res.status(400).json({ error: 'A YouTube video ID is required.' });
+  try {
+    const result = await cached('lyrics:' + videoId, 30 * 60_000, async () => {
+      await ensureReady();
+      if (typeof yt.getLyrics !== 'function') throw new Error('Lyrics are not supported by the installed YouTube Music client.');
+      return await yt.getLyrics(videoId);
+    });
+    if (!result) return res.status(404).json({ error: 'No lyrics found for this track.' });
+    return res.json(result);
+  } catch (error) {
+    console.error('Lyrics lookup failed:', error?.message || error);
+    return res.status(502).json({ error: 'YouTube Music lyrics are temporarily unavailable.' });
+  }
+});
+
 app.get('/api/search', async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 160);
   if (!q) return res.status(400).json({ error: 'Enter a song, artist, or mood to search.' });

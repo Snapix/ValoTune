@@ -87,7 +87,7 @@ export default function BlurText({
       : effect === 'focus'
         ? { opacity: 0.25, filter: `blur(${blur}px)`, scale: 1.08 }
         : { opacity: 0, filter: `blur(${blur}px)`, x: axis === 'x' ? sign * distance : 0, y: axis === 'y' ? sign * distance : 0, skewX: effect === 'drift' ? sign * 12 : 0 };
-  const hidden = !visible || trigger === 'hover' || trigger === 'click';
+  const hidden = !visible;
   return (
     <MotionConfig reducedMotion="user">
       <p ref={root} className={className} aria-label={text} onClick={trigger === 'click' ? () => { setVisible(true); setReplay(v => v + 1); } : undefined} onPointerEnter={trigger === 'hover' ? () => { setVisible(true); setReplay(v => v + 1); } : undefined}>

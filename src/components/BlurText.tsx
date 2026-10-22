@@ -17,7 +17,7 @@ type BlurTextProps = {
   focusOnHover?: boolean;
 };
 
-const ease = [0.33, 1, 0.68, 1] as const;
+const ease: [number, number, number, number] = [0.33, 1, 0.68, 1];
 
 export default function BlurText({
   text,

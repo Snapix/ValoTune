@@ -168,3 +168,10 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 @media(prefers-reduced-motion:reduce){.lyrics-line{transition:none}}
 
 .blur-text-pieces{display:inline}.blur-text-piece{will-change:transform,filter,opacity}.lyrics-line-text{margin:0;display:block;width:100%;font:inherit;line-height:inherit;color:inherit}.lyrics-line-text .blur-text-pieces{display:inline}
+
+
+/* Keep each lyric timestamp static while its lyric text animates independently. */
+.lyrics-line{display:flex;align-items:baseline;gap:12px}
+.lyrics-timestamp{flex:0 0 auto;min-width:6.5em;color:var(--muted);font:500 11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.025em;opacity:.78}
+.lyrics-line-text{flex:1;min-width:0}
+@media(max-width:620px){.lyrics-line{gap:9px}.lyrics-timestamp{min-width:5.8em;font-size:10px}}

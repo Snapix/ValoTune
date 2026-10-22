@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import GooeyNav from './components/GooeyNav';
 import ElasticSlider from './components/ElasticSlider';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
@@ -53,16 +52,10 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [fullscreenPlayer]);
-  const navItems = useMemo(() => TABS.map(label => ({ label })), []);
   const view: ViewProps = { play: player.play, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
-    <header className="top">
-      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo">♫</span><span>valo<span className="brand-light">tune</span></span></button>
-      <GooeyNav items={navItems} activeIndex={tab} onChange={setTab} color={settings.accent} />
-      <div className="top-status"><i /> REAL MUSIC. NO MOCKS.</div>
-    </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(1); }} />}
       {tab === 1 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
@@ -104,7 +97,7 @@ export default function App() {
         <div className="fullscreen-volume"><VolumeIcon size={20} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
       </div>
     </section>}
-    <nav className="mobile-nav" aria-label="Mobile navigation">{TABS.map((label, index) => <button key={label} className={tab === index ? 'active' : ''} onClick={() => setTab(index)} aria-current={tab === index ? 'page' : undefined}><span>{['⌂', '⌕', '▤', '⚙'][index]}</span><small>{label}</small></button>)}</nav>
+    <nav className="mobile-nav" aria-label="Main navigation">{TABS.map((label, index) => <button key={label} className={tab === index ? 'active' : ''} onClick={() => setTab(index)} aria-current={tab === index ? 'page' : undefined}><span>{['⌂', '⌕', '▤', '⚙'][index]}</span><small>{label}</small></button>)}</nav>
     {toast && <div className="toast" role="status">{toast}</div>}
   </div>;
 }

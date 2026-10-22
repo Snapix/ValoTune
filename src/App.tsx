@@ -26,7 +26,7 @@ const artwork = (song: Song) => song.thumb || '';
 export default function App() {
   const [tab, setTab] = useState(0);
   const [pendingSearch, setPendingSearch] = useState('');
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
@@ -57,14 +57,14 @@ export default function App() {
   const view: ViewProps = { play: player.play, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
-  return <div className="app">
+  return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo">♫</span><span>valo<span className="brand-light">tune</span></span></button>
       <GooeyNav items={navItems} activeIndex={tab} onChange={setTab} color={settings.accent} />
       <div className="top-status"><i /> REAL MUSIC. NO MOCKS.</div>
     </header>
     <main className="content" key={tab}>
-      {tab === 0 && <Home {...view} onExplore={term => { setPendingSearch(term); setTab(1); }} />}
+      {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(1); }} />}
       {tab === 1 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
       {tab === 2 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
@@ -109,7 +109,7 @@ export default function App() {
   </div>;
 }
 
-function Home(v: ViewProps & { onExplore: (term: string) => void }) {
+function Home(v: ViewProps & { onExplore: (term: string) => void; showHomeShelves: boolean; showGenres: boolean }) {
   const [sections, setSections] = useState<Section[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -123,8 +123,8 @@ function Home(v: ViewProps & { onExplore: (term: string) => void }) {
     <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><div className="hero-note"><span>♫</span><b>Made for the moment</b><small>Discover something new today.</small></div></div>
     {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home').then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
     {!sections && !error && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div className="sk" key={i} />)}</div>}
-    {sections?.map(section => <Shelf key={section.title} section={section} {...v} />)}
-    <section className="genre-section"><div className="section-title"><div><small className="eyebrow">FOLLOW THE FEELING</small><h2>Explore by mood</h2></div></div><div className="genre-grid">{GENRES.map((genre, i) => <button key={genre} className={`genre genre-${i % 6}`} onClick={() => v.onExplore(genre + ' songs')}><span>{['✦','◉','☾','↗','♫','♡'][i % 6]}</span>{genre}<b>↗</b></button>)}</div></section>
+    {v.showHomeShelves && sections?.map(section => <Shelf key={section.title} section={section} {...v} />)}
+    {v.showGenres && <section className="genre-section"><div className="section-title"><div><small className="eyebrow">FOLLOW THE FEELING</small><h2>Explore by mood</h2></div></div><div className="genre-grid">{GENRES.map((genre, i) => <button key={genre} className={`genre genre-${i % 6}`} onClick={() => v.onExplore(genre + ' songs')}><span>{['✦','◉','☾','↗','♫','♡'][i % 6]}</span>{genre}<b>↗</b></button>)}</div></section>}
   </section>;
 }
 
@@ -195,10 +195,45 @@ function Library({ play, liked, toggleLike, currentId, playing, likedList, recen
 }
 
 function SettingsView({ settings, setPreference, clear }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; clear: () => void }) {
-  return <section className="settings-page"><small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Your preferences stay in this browser.</p>
-    <div className="settings-group"><div className="settings-title"><h2>Appearance</h2><p>Choose the accent that feels right.</p></div><div className="panel"><div><b>Accent colour</b><span>Used across navigation and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div></div>
-    <div className="settings-group"><div className="settings-title"><h2>Playback</h2><p>Control how music behaves.</p></div><div className="panel"><div><b>Default volume</b><span>{settings.volume}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div><div className="panel"><div><b>Autoplay next</b><span>Continue to the next song when a track ends.</span></div><button className={`toggle ${settings.autoplay ? 'on' : ''}`} role="switch" aria-checked={settings.autoplay} onClick={() => setPreference('autoplay', !settings.autoplay)}><i /></button></div></div>
-    <div className="settings-group"><div className="settings-title"><h2>Library data</h2><p>Clear locally saved likes and listening history.</p></div><div className="panel"><div><b>Clear library</b><span>This does not affect music service data.</span></div><button className="btn ghost" onClick={() => { if (window.confirm('Clear liked songs and listening history from this browser?')) clear(); }}>Clear data</button></div></div>
-    <p className="about">ValoTune uses YouTube Music search and the YouTube player. Playback availability depends on YouTube, regional restrictions, and the track.</p>
+  const resetPreferences = () => {
+    if (!window.confirm('Reset appearance and playback preferences to their defaults?')) return;
+    setPreference('accent', ACCENTS[0]);
+    setPreference('volume', 70);
+    setPreference('autoplay', true);
+    setPreference('theme', 'dark');
+    setPreference('compactPlayer', false);
+    setPreference('reduceMotion', false);
+    setPreference('ambientBackground', true);
+    setPreference('showHomeShelves', true);
+    setPreference('showGenres', true);
+    setPreference('showNavLabels', true);
+  };
+  const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'ambientBackground' | 'showHomeShelves' | 'showGenres' | 'showNavLabels') => (
+    <div className="panel" key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
+  );
+  return <section className="settings-page"><small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Straightforward controls. Your preferences stay in this browser.</p>
+    <div className="settings-group"><div className="settings-title"><h2>Appearance</h2><p>Make ValoTune feel like yours.</p></div>
+      <div className="panel"><div><b>Theme</b><span>Choose dark, light, or follow your device.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])} aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></div>
+      <div className="panel"><div><b>Accent colour</b><span>Used for active navigation and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
+      {toggle('Ambient background', 'Keep the subtle colour wash behind the page.', 'ambientBackground')}
+    </div>
+    <div className="settings-group"><div className="settings-title"><h2>Player</h2><p>Choose a comfortable player layout.</p></div>
+      {toggle('Compact player', 'Use a shorter bottom player on larger screens.', 'compactPlayer')}
+      <div className="panel"><div><b>Default volume</b><span>{settings.volume}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div>
+      {toggle('Autoplay next', 'Continue to the next song when a track ends.', 'autoplay')}
+    </div>
+    <div className="settings-group"><div className="settings-title"><h2>Home screen</h2><p>Keep only the sections you use.</p></div>
+      {toggle('Music shelves', 'Show curated song rows on the home screen.', 'showHomeShelves')}
+      {toggle('Explore by mood', 'Show the genre and mood shortcuts.', 'showGenres')}
+    </div>
+    <div className="settings-group"><div className="settings-title"><h2>Motion & navigation</h2><p>Keep interactions comfortable and readable.</p></div>
+      {toggle('Reduce animations', 'Minimise transitions and moving effects.', 'reduceMotion')}
+      {toggle('Show mobile navigation labels', 'Keep text labels under the mobile navigation icons.', 'showNavLabels')}
+    </div>
+    <div className="settings-group"><div className="settings-title"><h2>Data & reset</h2><p>Manage preferences and locally saved listening data.</p></div>
+      <div className="panel"><div><b>Clear library</b><span>Remove liked songs and listening history from this browser.</span></div><button className="btn" onClick={() => { if (window.confirm('Clear liked songs and listening history from this browser?')) clear(); }}>Clear data</button></div>
+      <div className="panel"><div><b>Reset preferences</b><span>Restore the default appearance and playback options.</span></div><button className="btn" onClick={resetPreferences}>Reset settings</button></div>
+    </div>
+    <p className="about">ValoTune uses YouTube Music search and the YouTube player. Playback availability depends on YouTube, regional restrictions, and the track. Settings are saved locally in this browser.</p>
   </section>;
 }

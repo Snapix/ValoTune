@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ElasticSlider from './components/ElasticSlider';
 import GooeyNav from './components/GooeyNav';
+import BlurText from './components/BlurText';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
 import { useLocal } from './store';
@@ -265,7 +266,7 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
   const [record, setRecord] = useState<LyricsRecord | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
-  const activeLine = useRef<HTMLButtonElement | null>(null);
+  const activeLine = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
@@ -321,7 +322,7 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
     {status === 'error' && <div className="lyrics-state"><p>Lyrics couldn’t be loaded right now.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
     {status === 'empty' && <div className="lyrics-state">{record?.instrumental ? 'This track is marked as instrumental.' : 'No lyrics found for this track.'}</div>}
-    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <button key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')} type="button">{line.text}</button>)}</div>}
+    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')}><BlurText text={line.text} effect="drift" animateBy="words" direction="left" staggerFrom="random" trigger="view" delay={110} stepDuration={0.5} blur={12} distance={70} focusOnHover className="lyrics-line-text" /></div>)}</div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

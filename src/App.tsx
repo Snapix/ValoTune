@@ -246,15 +246,20 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
 type LyricLine = { time: number | null; text: string };
 type LyricsRecord = { name?: string; trackName?: string; artistName?: string; plainLyrics?: string | null; syncedLyrics?: string | null; instrumental?: boolean; lyrics?: string | Array<{ time?: number; startTime?: number; start_time?: number; text: string }>; hasTimestamps?: boolean; source?: string };
 function parseLrc(value: string): LyricLine[] {
-  return value.split(/\r?\n/).flatMap(line => {
-    const matches = [...line.matchAll(/\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g)];
-    const text = line.replace(/\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\]/g, '').trim();
-    if (!matches.length) return text ? [{ time: null, text }] : [];
-    return matches.map(match => {
+  const lines: LyricLine[] = [];
+  for (const sourceLine of value.split(/\r?\n/)) {
+    const matches = [...sourceLine.matchAll(/\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g)];
+    const text = sourceLine.replace(/\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\]/g, '').trim();
+    if (!matches.length) {
+      if (text) lines.push({ time: null, text });
+      continue;
+    }
+    for (const match of matches) {
       const fraction = match[3] ? Number('0.' + match[3]) : 0;
-      return { time: Number(match[1]) * 60 + Number(match[2]) + fraction, text };
-    }).filter(line => line.text);
-  }).sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+      if (text) lines.push({ time: Number(match[1]) * 60 + Number(match[2]) + fraction, text });
+    }
+  }
+  return lines.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
 }
 function LyricsPanel({ song, time, provider }: { song: Song; time: number; provider: Settings['lyricsProvider'] }) {
   const [record, setRecord] = useState<LyricsRecord | null>(null);
@@ -302,7 +307,7 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
     void loadLyrics();
     return () => { cancelled = true; controller.abort(); };
   }, [song.videoId, song.name, song.artist, song.duration, provider, retryKey]);
-  const lines = useMemo(() => {
+  const lines = useMemo<LyricLine[]>(() => {
     if (!record) return [];
     if (typeof record.syncedLyrics === 'string' && record.syncedLyrics.trim()) return parseLrc(record.syncedLyrics);
     if (Array.isArray(record.lyrics)) return record.lyrics.map(line => { const rawTime = line.time ?? line.startTime ?? line.start_time ?? null; return { time: rawTime === null ? null : Number(rawTime) > 1000 ? Number(rawTime) / 1000 : Number(rawTime), text: String(line.text || '') }; }).filter(line => line.text);

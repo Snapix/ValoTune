@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GooeyNav from './components/GooeyNav';
 import ElasticSlider from './components/ElasticSlider';
+import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
 import { useLocal } from './store';
 import { fmt, type Artist, type Section, type Settings, type Song } from './types';
@@ -29,6 +30,7 @@ export default function App() {
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
+  const [fullscreenPlayer, setFullscreenPlayer] = useState(false);
   const toastTimer = useRef<number | undefined>(undefined);
   const onPlayed = useCallback((song: Song) => setRecent(items => [song, ...items.filter(item => item.videoId !== song.videoId)].slice(0, 50)), [setRecent]);
   const player = usePlayer(settings.volume, settings.autoplay, onPlayed);
@@ -45,6 +47,12 @@ export default function App() {
     document.documentElement.style.setProperty('--accent', settings.accent);
     return () => window.clearTimeout(toastTimer.current);
   }, [settings.accent]);
+  useEffect(() => {
+    if (!fullscreenPlayer) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setFullscreenPlayer(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreenPlayer]);
   const navItems = useMemo(() => TABS.map(label => ({ label })), []);
   const view: ViewProps = { play: player.play, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
@@ -62,7 +70,11 @@ export default function App() {
       {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
     </main>
     <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>
-    {player.current && <footer className="player" aria-label="Music player">
+    {player.current && <footer className="player" aria-label="Music player" onClick={event => {
+      if (!(event.target as HTMLElement).closest('button,input,label')) setFullscreenPlayer(true);
+    }} onKeyDown={event => {
+      if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) { event.preventDefault(); setFullscreenPlayer(true); }
+    }} tabIndex={0} role="group" aria-description="Select the player background to open the fullscreen player">
       <div className="np">
         <img src={artwork(player.current)} alt="" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
         <div className="np-text"><b title={player.current.name}>{player.current.name}</b><span>{player.current.artist}</span></div>
@@ -70,14 +82,28 @@ export default function App() {
       </div>
       <div className="controls">
         <div className="buttons">
-          <button className="icon-btn" onClick={player.prev} aria-label="Previous track">|◀</button>
-          <button className="play-btn" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? 'Ⅱ' : '▶'}</button>
-          <button className="icon-btn" onClick={player.next} aria-label="Next track">▶|</button>
+          <button className="icon-btn player-control" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={20} /></button>
+          <button className="play-btn" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? <PauseIcon size={20} /> : <PlayIcon size={20} />}</button>
+          <button className="icon-btn player-control" onClick={player.next} aria-label="Next track"><NextIcon size={20} /></button>
         </div>
         <div className="seek"><span>{fmt(player.time)}</span><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /><span>{fmt(player.duration)}</span></div>
       </div>
-      <div className="volume"><span aria-hidden="true">◖</span><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
+      <div className="volume"><VolumeIcon size={20} aria-hidden="true" /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
     </footer>}
+    {fullscreenPlayer && player.current && <section className="fullscreen-player" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
+      <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><CloseIcon size={24} /><span>Minimize</span></button>
+      <div className="fullscreen-inner">
+        <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
+        <div className="fullscreen-track"><small>NOW PLAYING</small><h1>{player.current.name || 'Unknown track'}</h1><p>{player.current.artist || 'Unknown artist'}</p></div>
+        <div className="fullscreen-seek"><div className="fullscreen-time"><span>{fmt(player.time)}</span><span>{fmt(player.duration)}</span></div><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /></div>
+        <div className="fullscreen-controls">
+          <button className="fullscreen-icon" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={32} /></button>
+          <button className="fullscreen-play" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? <PauseIcon size={32} /> : <PlayIcon size={32} />}</button>
+          <button className="fullscreen-icon" onClick={player.next} aria-label="Next track"><NextIcon size={32} /></button>
+        </div>
+        <div className="fullscreen-volume"><VolumeIcon size={20} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
+      </div>
+    </section>}
     <nav className="mobile-nav" aria-label="Mobile navigation">{TABS.map((label, index) => <button key={label} className={tab === index ? 'active' : ''} onClick={() => setTab(index)} aria-current={tab === index ? 'page' : undefined}><span>{['⌂', '⌕', '▤', '⚙'][index]}</span><small>{label}</small></button>)}</nav>
     {toast && <div className="toast" role="status">{toast}</div>}
   </div>;

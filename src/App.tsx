@@ -208,7 +208,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
     setPreference('showGenres', true);
     setPreference('showNavLabels', true);
   };
-  const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'ambientBackground' | 'showHomeShelves' | 'showGenres' | 'showNavLabels') => (
+  const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'ambientBackground' | 'showHomeShelves' | 'showGenres' | 'showNavLabels' | 'autoplay') => (
     <div className="panel" key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
   );
   return <section className="settings-page"><small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Straightforward controls. Your preferences stay in this browser.</p>

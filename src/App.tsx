@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ElasticSlider from './components/ElasticSlider';
+import GooeyNav from './components/GooeyNav';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
 import { useLocal } from './store';
@@ -8,6 +9,7 @@ import { fmt, type Artist, type Section, type Settings, type Song } from './type
 const ACCENTS = ['#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b', '#f43f5e'];
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
 const TABS = ['Home', 'Discover', 'Library', 'Settings'];
+const NAV_ITEMS = TABS.map(label => ({ label }));
 type SearchData = { songs: Song[]; artists: Artist[] };
 type ViewProps = { play: (song: Song, list?: Song[]) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
 const api = async <T,>(url: string): Promise<T> => {
@@ -58,7 +60,7 @@ export default function App() {
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo">♫</span><span>valo<span className="brand-light">tune</span></span></button>
-      <nav className="top-nav" aria-label="Main navigation">{TABS.map((label, index) => <button key={label} className={tab === index ? 'active' : ''} onClick={() => setTab(index)} aria-current={tab === index ? 'page' : undefined}>{label}</button>)}</nav>
+      <GooeyNav items={NAV_ITEMS} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
       <div className="top-status"><i /> MUSIC FOR EVERY MOMENT</div>
     </header>
     <main className="content" key={tab}>

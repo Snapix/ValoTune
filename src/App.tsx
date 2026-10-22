@@ -27,7 +27,7 @@ const artwork = (song: Song) => song.thumb || '';
 export default function App() {
   const [tab, setTab] = useState(0);
   const [pendingSearch, setPendingSearch] = useState('');
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
@@ -102,6 +102,7 @@ export default function App() {
           <button className="fullscreen-icon" onClick={player.next} aria-label="Next track"><NextIcon size={32} /></button>
         </div>
         <div className="fullscreen-volume"><VolumeIcon size={20} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
+        <LyricsPanel song={player.current} time={player.time} provider={settings.lyricsProvider} />
       </div>
     </section>}
     {toast && <div className="toast" role="status">{toast}</div>}
@@ -206,6 +207,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
     setPreference('showHomeShelves', true);
     setPreference('showGenres', true);
     setPreference('showNavLabels', true);
+    setPreference('lyricsProvider', 'lrclib');
   };
   const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'ambientBackground' | 'showHomeShelves' | 'showGenres' | 'showNavLabels' | 'autoplay') => (
     <div className="panel" key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
@@ -221,6 +223,9 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
       <div className="panel"><div><b>Default volume</b><span>{settings.volume}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div>
       {toggle('Autoplay next', 'Continue to the next song when a track ends.', 'autoplay')}
     </div>
+    <div className="settings-group"><div className="settings-title"><h2>Lyrics</h2><p>Choose where the fullscreen player pulls lyrics from.</p></div>
+      <div className="panel"><div><b>Lyrics source</b><span>LRCLIB is the default and supports synchronized lyrics when available.</span></div><select className="settings-select" value={settings.lyricsProvider} onChange={event => setPreference('lyricsProvider', event.target.value as Settings['lyricsProvider'])} aria-label="Lyrics source"><option value="lrclib">LRCLIB (recommended)</option><option value="ytmusic">YouTube Music</option></select></div>
+    </div>
     <div className="settings-group"><div className="settings-title"><h2>Home screen</h2><p>Keep only the sections you use.</p></div>
       {toggle('Music shelves', 'Show curated song rows on the home screen.', 'showHomeShelves')}
       {toggle('Explore by mood', 'Show the genre and mood shortcuts.', 'showGenres')}
@@ -234,5 +239,84 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
       <div className="panel"><div><b>Reset preferences</b><span>Restore the default appearance and playback options.</span></div><button className="btn" onClick={resetPreferences}>Reset settings</button></div>
     </div>
     <p className="about">ValoTune uses YouTube Music search and the YouTube player. Playback availability depends on YouTube, regional restrictions, and the track. Settings are saved locally in this browser.</p>
+  </section>;
+}
+
+
+type LyricLine = { time: number | null; text: string };
+type LyricsRecord = { name?: string; trackName?: string; artistName?: string; plainLyrics?: string | null; syncedLyrics?: string | null; instrumental?: boolean; lyrics?: string | Array<{ time?: number; startTime?: number; start_time?: number; text: string }>; hasTimestamps?: boolean; source?: string };
+function parseLrc(value: string): LyricLine[] {
+  return value.split(/\r?\n/).flatMap(line => {
+    const matches = [...line.matchAll(/\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g)];
+    const text = line.replace(/\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\]/g, '').trim();
+    if (!matches.length) return text ? [{ time: null, text }] : [];
+    return matches.map(match => {
+      const fraction = match[3] ? Number('0.' + match[3]) : 0;
+      return { time: Number(match[1]) * 60 + Number(match[2]) + fraction, text };
+    }).filter(line => line.text);
+  }).sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+}
+function LyricsPanel({ song, time, provider }: { song: Song; time: number; provider: Settings['lyricsProvider'] }) {
+  const [record, setRecord] = useState<LyricsRecord | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
+  const [retryKey, setRetryKey] = useState(0);
+  const activeLine = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    setRecord(null);
+    setStatus('loading');
+    const loadLyrics = async () => {
+      try {
+        let data: LyricsRecord | null = null;
+        if (provider === 'lrclib') {
+          const params = new URLSearchParams({ track_name: song.name, artist_name: song.artist });
+          if (song.duration > 0 && song.duration <= 3600) params.set('duration', String(Math.round(song.duration)));
+          let response = await fetch('https://lrclib.net/api/get?' + params.toString(), { signal: controller.signal, headers: { 'X-User-Agent': 'ValoTune/2.0.0 (https://github.com/Snapix/ValoTune)' } });
+          if (response.status === 404) {
+            const search = new URLSearchParams({ q: song.name + ' ' + song.artist });
+            response = await fetch('https://lrclib.net/api/search?' + search.toString(), { signal: controller.signal, headers: { 'X-User-Agent': 'ValoTune/2.0.0 (https://github.com/Snapix/ValoTune)' } });
+            if (response.ok) {
+              const candidates = await response.json() as LyricsRecord[];
+              const title = song.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const artist = song.artist.toLowerCase().replace(/[^a-z0-9]/g, '');
+              data = candidates.find(item => (item.trackName || item.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') === title && (item.artistName || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(artist)) || candidates[0] || null;
+            } else if (response.status === 429) throw new Error('LRCLIB is rate-limiting requests. Try again shortly.');
+          } else if (response.ok) data = await response.json() as LyricsRecord;
+          else if (response.status === 429) throw new Error('LRCLIB is rate-limiting requests. Try again shortly.');
+          else if (!response.ok) throw new Error('LRCLIB request failed.');
+        } else {
+          const response = await fetch('/api/lyrics?videoId=' + encodeURIComponent(song.videoId), { signal: controller.signal });
+          if (response.status === 404) data = null;
+          else if (!response.ok) throw new Error('YouTube Music could not load lyrics.');
+          else data = await response.json() as LyricsRecord;
+        }
+        if (cancelled) return;
+        setRecord(data);
+        setStatus(data && (data.syncedLyrics || data.plainLyrics || data.lyrics) ? 'ready' : 'empty');
+      } catch (error) {
+        if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) return;
+        setStatus('error');
+      }
+    };
+    void loadLyrics();
+    return () => { cancelled = true; controller.abort(); };
+  }, [song.videoId, song.name, song.artist, song.duration, provider, retryKey]);
+  const lines = useMemo(() => {
+    if (!record) return [];
+    if (typeof record.syncedLyrics === 'string' && record.syncedLyrics.trim()) return parseLrc(record.syncedLyrics);
+    if (Array.isArray(record.lyrics)) return record.lyrics.map(line => { const rawTime = line.time ?? line.startTime ?? line.start_time ?? null; return { time: rawTime === null ? null : Number(rawTime) > 1000 ? Number(rawTime) / 1000 : Number(rawTime), text: String(line.text || '') }; }).filter(line => line.text);
+    const plain = record.plainLyrics || (typeof record.lyrics === 'string' ? record.lyrics : '');
+    return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
+  }, [record]);
+  const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
+  useEffect(() => { activeLine.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [currentLine]);
+  return <section className="lyrics-panel" aria-label="Song lyrics">
+    <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>
+    {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
+    {status === 'error' && <div className="lyrics-state"><p>Lyrics couldn’t be loaded right now.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
+    {status === 'empty' && <div className="lyrics-state">{record?.instrumental ? 'This track is marked as instrumental.' : 'No lyrics found for this track.'}</div>}
+    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <button key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')} type="button">{line.text}</button>)}</div>}
+    <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

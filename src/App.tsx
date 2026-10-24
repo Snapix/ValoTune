@@ -7,7 +7,7 @@ import { usePlayer } from './player';
 import { useLocal } from './store';
 import { fmt, type Artist, type Section, type Settings, type Song } from './types';
 
-const ACCENTS = ['#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b', '#f43f5e'];
+const ACCENTS = ['#a3a3a3', '#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b', '#f43f5e'];
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
 const TABS = ['Home', 'Discover', 'Library', 'Settings'];
 const NAV_ITEMS = TABS.map(label => ({ label }));
@@ -46,9 +46,11 @@ export default function App() {
     setLiked(items => items.some(item => key(item) === key(song)) ? items.filter(item => key(item) !== key(song)) : [song, ...items]);
   }, [setLiked]);
   useEffect(() => {
+    // Migrate the previous purple default to the new neutral grey default.
+    if (settings.accent.toLowerCase() === '#8b5cf6') setSettings(current => ({ ...current, accent: '#a3a3a3' }));
     document.documentElement.style.setProperty('--accent', settings.accent);
     return () => window.clearTimeout(toastTimer.current);
-  }, [settings.accent]);
+  }, [settings.accent, setSettings]);
   useEffect(() => {
     if (!fullscreenPlayer) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setFullscreenPlayer(false); };
@@ -216,7 +218,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
   return <section className="settings-page"><small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Straightforward controls. Your preferences stay in this browser.</p>
     <div className="settings-group"><div className="settings-title"><h2>Appearance</h2><p>Make ValoTune feel like yours.</p></div>
       <div className="panel"><div><b>Theme</b><span>Choose dark, light, or follow your device.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])} aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></div>
-      <div className="panel"><div><b>Accent colour</b><span>Used for active navigation and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
+      <div className="panel"><div><b>Accent colour</b><span>Used across navigation, highlights, buttons, and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
       {toggle('Ambient background', 'Keep the subtle colour wash behind the page.', 'ambientBackground')}
     </div>
     <div className="settings-group"><div className="settings-title"><h2>Player</h2><p>Choose a comfortable player layout.</p></div>

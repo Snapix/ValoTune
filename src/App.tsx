@@ -62,7 +62,7 @@ export default function App() {
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
-      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo">♫</span><span>valo<span className="brand-light">tune</span></span></button>
+      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img src="/valotune-icon.svg" alt="" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <GooeyNav items={NAV_ITEMS} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
       <div className="top-status"><i /> MUSIC FOR EVERY MOMENT</div>
     </header>

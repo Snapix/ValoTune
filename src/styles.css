@@ -177,7 +177,6 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 @media(max-width:620px){.lyrics-line{gap:9px}.lyrics-timestamp{min-width:5.8em;font-size:10px}}
 
 
-/* Animated Bloub mascot layered over the existing ValoTune logo. */
-.top .logo{position:relative;isolation:isolate}
-.top .logo .logo-base{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.top .logo .logo-bloub{position:absolute;inset:0;z-index:1;width:100%;height:100%;max-width:none;object-fit:contain;border-radius:inherit;pointer-events:none}
+/* Use the animated Bloub as the logo itself; do not show the old outlined icon beneath it. */
+.top .logo{position:relative;isolation:isolate;background:#0a0a0c}
+.top .logo .logo-bloub{display:block;position:absolute;inset:0;z-index:1;width:100%;height:100%;max-width:none;object-fit:cover;border-radius:inherit;pointer-events:none}

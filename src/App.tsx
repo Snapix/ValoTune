@@ -14,7 +14,7 @@ const NAV_ITEMS = TABS.map(label => ({ label }));
 type SearchData = { songs: Song[]; artists: Artist[] };
 type ViewProps = { play: (song: Song, list?: Song[]) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
 const api = async <T,>(url: string): Promise<T> => {
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\\/$/, '');
+  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
   const response = await fetch(`${apiBase}${url}`);
   if (!response.ok) {
     let message = `Request failed (${response.status})`;

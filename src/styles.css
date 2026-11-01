@@ -260,3 +260,79 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 @media(max-width:900px){.app-hero-orbit{right:-40px;opacity:.48}.app-hero-copy{max-width:75%}.download-grid{grid-template-columns:1fr 1fr}.download-card:last-child{grid-column:1/-1;min-height:320px}}
 @media(max-width:620px){.app-download-hero{min-height:340px;margin-bottom:38px;padding:32px 24px;align-items:flex-start}.app-hero-copy{max-width:100%}.app-hero-title{font-size:46px}.app-hero-sub{max-width:300px}.app-hero-orbit{width:220px;height:220px;right:-80px;top:auto;bottom:-55px;transform:none;opacity:.3}.app-orbit-disc{width:90px;height:90px;border-radius:25px}.app-orbit-disc span{font-size:52px}.app-orbit-ring-one{width:210px;height:110px}.app-orbit-ring-two{width:180px;height:180px}.app-section-heading{align-items:flex-start;gap:12px}.app-section-note{max-width:100px;text-align:right;line-height:1.5}.download-grid{grid-template-columns:1fr}.download-card,.download-card:last-child{grid-column:auto;min-height:340px;padding:20px}.download-card p{min-height:0}.app-download-footer{margin-top:20px}}
 @media(prefers-reduced-motion:reduce){.download-card,.download-action{transition:none}.app-footer-equalizer i{animation:none}}
+
+
+/* Download page refinement: Bloub focal mark, restrained platform icons, and aligned actions. */
+.app-orbit-disc.app-orbit-bloub{
+  width:clamp(148px,16vw,194px);height:clamp(148px,16vw,194px);
+  padding:0;border:0;border-radius:34%;background:transparent;
+  box-shadow:0 0 88px color-mix(in srgb,var(--accent) 25%,transparent);
+  transform:rotate(-5deg);overflow:hidden;
+}
+.app-orbit-bloub img{display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit}
+.app-download-hero .app-hero-orbit{width:360px;height:360px;right:4%}
+.app-orbit-bloub img{filter:drop-shadow(0 18px 36px #0007)}
+.app-download-footer{align-items:center}
+.app-footer-mark{display:block;flex:0 0 42px;width:42px;height:42px;object-fit:cover;border:0;border-radius:13px}
+.download-card{
+  min-height:390px;
+  display:flex;flex-direction:column;align-items:stretch;
+  padding:24px;
+}
+.download-card h3{margin:0 0 10px}
+.download-card p{
+  min-height:0;flex:1;
+  margin:0 0 24px;
+  color:#9b9ba2;
+  font-size:12px;line-height:1.9;
+}
+.download-icon{margin:26px 0 20px}
+.download-icon img{width:46px;height:46px;filter:none}
+.download-icon-android,.download-icon-linux,.download-icon-windows{
+  background:#141416;border-color:#303035;
+}
+.download-icon-linux img{width:50px;height:50px}
+.download-icon-windows img{width:48px;height:48px}
+.download-card-featured{
+  border-color:#777780;
+  box-shadow:0 18px 50px #0003;
+  transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease;
+}
+.download-card-featured:hover{
+  transform:translateY(-2px);
+  border-color:#b8b8c0;
+  box-shadow:0 22px 58px #0006,0 0 28px #ffffff0d;
+}
+.download-card-soon{opacity:.72}
+.download-card-soon:hover{transform:none;border-color:var(--line);box-shadow:0 18px 50px #0002}
+.download-action{
+  justify-content:center;
+  min-height:48px;
+  background:#fff;color:#111114;border-color:#fff;
+  transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.download-action:hover{
+  transform:translateY(-1px);
+  filter:none;background:#f0f0f2;
+  box-shadow:0 8px 24px #fff2;
+}
+.download-soon{
+  min-height:48px;justify-content:center;
+  opacity:.48;cursor:not-allowed;user-select:none;
+}
+.download-soon:hover{transform:none;filter:none;cursor:not-allowed}
+.download-soon span{margin-left:auto}
+.download-note{line-height:1.7}
+@media(max-width:900px){
+  .download-card{min-height:380px}
+  .app-download-hero .app-hero-orbit{right:-55px}
+}
+@media(max-width:620px){
+  .app-download-hero .app-hero-orbit{right:-95px;bottom:-48px}
+  .app-orbit-disc.app-orbit-bloub{width:132px;height:132px}
+  .download-card,.download-card:last-child{min-height:0;padding:22px}
+  .download-card p{min-height:0;flex:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .download-card-featured,.download-action{transition:none}
+}

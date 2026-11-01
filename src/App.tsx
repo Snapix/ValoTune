@@ -353,36 +353,55 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
 function AppDownloads() {
   return <section className="app-downloads">
     <div className="app-download-hero">
-      <small className="eyebrow">TAKE YOUR MUSIC WITH YOU</small>
-      <h1 className="page-heading">Enjoy ValoTune <em>natively.</em></h1>
-      <p className="sub">A more focused listening experience, right on your device. Choose your platform below.</p>
+      <div className="app-hero-copy">
+        <span className="app-kicker"><i /> THE VALOTUNE DESKTOP & MOBILE EXPERIENCE</span>
+        <h1 className="app-hero-title">Your music.<br /><em>Beyond the browser.</em></h1>
+        <p className="app-hero-sub">A home for ValoTune on every screen. Get closer to your music with an experience made for your device.</p>
+      </div>
+      <div className="app-hero-orbit" aria-hidden="true">
+        <div className="app-orbit-ring app-orbit-ring-one" />
+        <div className="app-orbit-ring app-orbit-ring-two" />
+        <div className="app-orbit-disc"><span>V</span><i>♪</i></div>
+        <div className="app-orbit-caption">PLAY IT YOUR WAY</div>
+      </div>
     </div>
+
+    <div className="app-section-heading">
+      <div><span className="app-kicker">PICK YOUR PLATFORM</span><h2>Find your ValoTune.</h2></div>
+      <span className="app-section-note">One sound. Every device.</span>
+    </div>
+
     <div className="download-grid">
-      <article className="download-card download-ready">
-        <div className="download-icon">▣</div>
-        <span className="download-platform">ANDROID</span>
-        <h2>ValoTune for Android</h2>
-        <p>Install the Android APK and keep ValoTune close at hand.</p>
-        <a className="download-action" href="https://github.com/Snapix/ValoTune/actions/workflows/android-apk.yml" target="_blank" rel="noreferrer">Get Android APK <span>↗</span></a>
-        <small className="download-note">Debug build · Open the latest successful build and download its APK artifact.</small>
+      <article className="download-card download-card-featured">
+        <div className="download-card-top"><span className="download-platform">ANDROID</span><span className="download-status"><i /> AVAILABLE NOW</span></div>
+        <div className="download-icon download-icon-android"><img src="/platform-icons/android.svg" alt="" /></div>
+        <h3>ValoTune for Android</h3>
+        <p>Take your listening experience with you. Install ValoTune directly on your Android device.</p>
+        <a className="download-action" href="https://github.com/Snapix/ValoTune/actions/workflows/android-apk.yml" target="_blank" rel="noreferrer">Get the Android APK <span>↗</span></a>
+        <small className="download-note">Current build: debug APK · Download the latest successful workflow artifact.</small>
+        <span className="download-featured-watermark" aria-hidden="true">01</span>
       </article>
-      <article className="download-card">
-        <div className="download-icon">⌘</div>
-        <span className="download-platform">LINUX</span>
-        <h2>ValoTune for Linux</h2>
-        <p>A native desktop package for your Linux machine.</p>
-        <span className="download-soon">AppImage · Coming soon</span>
-        <small className="download-note">We’ll publish a portable AppImage when the desktop build is ready.</small>
+
+      <article className="download-card download-card-soon">
+        <div className="download-card-top"><span className="download-platform">LINUX</span><span className="download-status download-status-soon">IN DEVELOPMENT</span></div>
+        <div className="download-icon download-icon-linux"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Tux.svg" alt="Linux Tux mascot" /></div>
+        <h3>ValoTune for Linux</h3>
+        <p>A portable desktop app for your Linux setup. No complicated installation process.</p>
+        <div className="download-soon">AppImage <span>COMING SOON</span></div>
+        <small className="download-note">Linux mascot artwork: <a href="https://commons.wikimedia.org/wiki/File:Tux.svg" target="_blank" rel="noreferrer">Larry Ewing and The GIMP</a>.</small>
+        <span className="download-featured-watermark" aria-hidden="true">02</span>
       </article>
-      <article className="download-card">
-        <div className="download-icon">▦</div>
-        <span className="download-platform">WINDOWS</span>
-        <h2>ValoTune for Windows</h2>
-        <p>A dedicated desktop installer with a familiar app experience.</p>
-        <span className="download-soon">EXE installer · Coming soon</span>
-        <small className="download-note">The signed Windows installer is not available yet.</small>
+
+      <article className="download-card download-card-soon">
+        <div className="download-card-top"><span className="download-platform">WINDOWS</span><span className="download-status download-status-soon">IN DEVELOPMENT</span></div>
+        <div className="download-icon download-icon-windows"><img src="/platform-icons/windows.svg" alt="Windows logo" /></div>
+        <h3>ValoTune for Windows</h3>
+        <p>A dedicated Windows desktop experience, ready to live alongside your everyday apps.</p>
+        <div className="download-soon">EXE installer <span>COMING SOON</span></div>
+        <small className="download-note">A packaged and signed installer is not available yet.</small>
+        <span className="download-featured-watermark" aria-hidden="true">03</span>
       </article>
     </div>
-    <p className="download-footnote">Already installed ValoTune? This download page stays on the website and is hidden inside the installed app.</p>
+    <div className="app-download-footer"><span className="app-footer-mark">V</span><p>Made for the way you listen.<br /><strong>ValoTune, wherever you are.</strong></p><span className="app-footer-equalizer"><i /><i /><i /><i /><i /></span></div>
   </section>;
 }

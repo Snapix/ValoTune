@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import ElasticSlider from './components/ElasticSlider';
 import GooeyNav from './components/GooeyNav';
 import BlurText from './components/BlurText';
@@ -9,8 +10,7 @@ import { fmt, type Artist, type Section, type Settings, type Song } from './type
 
 const ACCENTS = ['#a3a3a3', '#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b', '#f43f5e'];
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
-const TABS = ['Home', 'Discover', 'Library', 'Settings'];
-const NAV_ITEMS = TABS.map(label => ({ label }));
+const TABS = ['Home', 'Library', 'Discover', 'Settings', 'App'];
 type SearchData = { songs: Song[]; artists: Artist[] };
 type ViewProps = { play: (song: Song, list?: Song[]) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
 const api = async <T,>(url: string): Promise<T> => {
@@ -28,7 +28,19 @@ const artwork = (song: Song) => song.thumb || '';
 
 export default function App() {
   const [tab, setTab] = useState(0);
+  const [installedPwa, setInstalledPwa] = useState(() => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+  const nativeApp = Capacitor.isNativePlatform();
+  const showAppMenu = !nativeApp && !installedPwa;
+  const navItems = (showAppMenu ? TABS : TABS.slice(0, 4)).map(label => ({ label }));
   const [pendingSearch, setPendingSearch] = useState('');
+  useEffect(() => {
+    const media = window.matchMedia('(display-mode: standalone)');
+    const update = () => setInstalledPwa(media.matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+    media.addEventListener?.('change', update);
+    window.addEventListener('appinstalled', update);
+    update();
+    return () => { media.removeEventListener?.('change', update); window.removeEventListener('appinstalled', update); };
+  }, []);
   const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
@@ -64,14 +76,14 @@ export default function App() {
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/bloub-my-cycle-3.gif" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
-      <GooeyNav items={NAV_ITEMS} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
+      <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
       <div className="top-status"><i /> MUSIC FOR EVERY MOMENT</div>
     </header>
     <main className="content" key={tab}>
-      {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(1); }} />}
+      {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
       {tab === 2 && <Library {...view} likedList={liked} recent={recent} />}
-      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}\n      {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
     <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>
     {player.current && <footer className="player" aria-label="Music player" onClick={event => {

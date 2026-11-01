@@ -81,8 +81,8 @@ export default function App() {
     </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
-      {tab === 1 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
-      {tab === 2 && <Library {...view} likedList={liked} recent={recent} />}
+      {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
+      {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
       {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}\n      {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
     <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>

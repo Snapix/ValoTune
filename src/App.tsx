@@ -541,7 +541,7 @@ function Home(v: ViewProps & { onExplore: (term: string) => void; showHomeShelve
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   return <section>
-    <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><div className="hero-note"><span>♫</span><b>Made for the moment</b><small>Discover something new today.</small></div></div>
+    <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><img className="home-brand-mark" src="/valotune-icon.svg" alt="ValoTune" /></div>
     {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home').then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
     {!sections && !error && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div className="sk" key={i} />)}</div>}
     {v.showHomeShelves && sections?.map(section => <Shelf key={section.title} section={section} {...v} />)}

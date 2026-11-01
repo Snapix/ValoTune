@@ -77,7 +77,6 @@ export default function App() {
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/bloub-my-cycle-3.gif" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
-      <div className="top-status"><i /> MUSIC FOR EVERY MOMENT</div>
     </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}

@@ -348,3 +348,41 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }
+
+
+function AppDownloads() {
+  return <section className="app-downloads">
+    <div className="app-download-hero">
+      <small className="eyebrow">TAKE YOUR MUSIC WITH YOU</small>
+      <h1 className="page-heading">Enjoy ValoTune <em>natively.</em></h1>
+      <p className="sub">A more focused listening experience, right on your device. Choose your platform below.</p>
+    </div>
+    <div className="download-grid">
+      <article className="download-card download-ready">
+        <div className="download-icon">▣</div>
+        <span className="download-platform">ANDROID</span>
+        <h2>ValoTune for Android</h2>
+        <p>Install the Android APK and keep ValoTune close at hand.</p>
+        <a className="download-action" href="https://github.com/Snapix/ValoTune/actions/workflows/android-apk.yml" target="_blank" rel="noreferrer">Get Android APK <span>↗</span></a>
+        <small className="download-note">Debug build · Open the latest successful build and download its APK artifact.</small>
+      </article>
+      <article className="download-card">
+        <div className="download-icon">⌘</div>
+        <span className="download-platform">LINUX</span>
+        <h2>ValoTune for Linux</h2>
+        <p>A native desktop package for your Linux machine.</p>
+        <span className="download-soon">AppImage · Coming soon</span>
+        <small className="download-note">We’ll publish a portable AppImage when the desktop build is ready.</small>
+      </article>
+      <article className="download-card">
+        <div className="download-icon">▦</div>
+        <span className="download-platform">WINDOWS</span>
+        <h2>ValoTune for Windows</h2>
+        <p>A dedicated desktop installer with a familiar app experience.</p>
+        <span className="download-soon">EXE installer · Coming soon</span>
+        <small className="download-note">The signed Windows installer is not available yet.</small>
+      </article>
+    </div>
+    <p className="download-footnote">Already installed ValoTune? This download page stays on the website and is hidden inside the installed app.</p>
+  </section>;
+}

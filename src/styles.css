@@ -180,3 +180,23 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 /* Use the animated Bloub as the logo itself; do not show the old outlined icon beneath it. */
 .top .logo{position:relative;isolation:isolate;background:#0a0a0c}
 .top .logo .logo-bloub{display:block;position:absolute;inset:0;z-index:1;width:100%;height:100%;max-width:none;object-fit:cover;border-radius:inherit;pointer-events:none}
+
+
+/* Native app download hub */
+.app-downloads{max-width:1120px;margin:8px auto 20px}
+.app-download-hero{max-width:700px;margin:8px 0 34px}
+.app-download-hero .page-heading{margin:12px 0}
+.download-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.download-card{display:flex;min-height:310px;flex-direction:column;align-items:flex-start;padding:24px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 7%,var(--panel)),var(--panel) 62%);box-shadow:0 16px 42px #0002}
+.download-icon{display:grid;place-items:center;width:48px;height:48px;margin-bottom:23px;border:1px solid var(--line-strong);border-radius:14px;background:var(--panel2);font-size:23px;color:var(--accent)}
+.download-platform{color:var(--accent);font-size:9px;font-weight:800;letter-spacing:.17em}
+.download-card h2{margin:8px 0;font-size:19px;letter-spacing:-.035em}
+.download-card p{margin:0 0 22px;color:var(--muted);font-size:12px;line-height:1.65}
+.download-action,.download-soon{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;margin-top:auto;padding:12px 14px;border:1px solid var(--line-strong);border-radius:11px;background:var(--ink);color:var(--bg);font-size:12px;font-weight:750;text-decoration:none}
+.download-action:hover{transform:translateY(-1px);filter:brightness(.92)}
+.download-action span{font-size:16px}
+.download-soon{background:var(--panel2);color:var(--muted);border-color:var(--line)}
+.download-note{display:block;margin-top:12px;color:var(--muted);font-size:10px;line-height:1.5}
+.download-footnote{margin:22px 0 0;color:var(--muted);font-size:11px}
+@media(max-width:800px){.download-grid{grid-template-columns:1fr 1fr}.download-card{min-height:290px}}
+@media(max-width:560px){.download-grid{grid-template-columns:1fr}.download-card{min-height:260px;padding:20px}.app-download-hero{margin-bottom:26px}}

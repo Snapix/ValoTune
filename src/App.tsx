@@ -31,6 +31,7 @@ export default function App() {
   const [installedPwa, setInstalledPwa] = useState(() => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
   const nativeApp = Capacitor.isNativePlatform();
   const showAppMenu = !nativeApp && !installedPwa;
+  useEffect(() => { if (!showAppMenu && tab === 4) setTab(0); }, [showAppMenu, tab]);
   const navItems = (showAppMenu ? TABS : TABS.slice(0, 4)).map(label => ({ label }));
   const [pendingSearch, setPendingSearch] = useState('');
   useEffect(() => {

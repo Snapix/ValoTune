@@ -75,11 +75,11 @@ export default function App() {
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
-      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/bloub-my-cycle-3.gif" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
+      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
     </header>
     <main className="content" key={tab}>
-      {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
+      {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
       {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}\n      {tab === 4 && showAppMenu && <AppDownloads />}
@@ -124,7 +124,7 @@ export default function App() {
   </div>;
 }
 
-function Home(v: ViewProps & { onExplore: (term: string) => void; showHomeShelves: boolean; showGenres: boolean }) {
+function Home(v: ViewProps & { recent: Song[]; onExplore: (term: string) => void; showHomeShelves: boolean; showGenres: boolean }) {
   const [sections, setSections] = useState<Section[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -135,7 +135,8 @@ function Home(v: ViewProps & { onExplore: (term: string) => void; showHomeShelve
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   return <section>
-    <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><div className="hero-note"><span>♫</span><b>Made for the moment</b><small>Discover something new today.</small></div></div>
+    <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><img className="home-brand-mark" src="/valotune-icon.svg" alt="ValoTune" /></div>
+    {v.recent.length > 0 && <Shelf section={{ title: "Continue listening", songs: v.recent.slice(0, 12) }} {...v} /> }
     {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home').then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
     {!sections && !error && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div className="sk" key={i} />)}</div>}
     {v.showHomeShelves && sections?.map(section => <Shelf key={section.title} section={section} {...v} />)}
@@ -482,7 +483,6 @@ export default function App() {
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/bloub-my-cycle-3.gif" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
-      <div className="top-status"><i /> MUSIC FOR EVERY MOMENT</div>
     </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}

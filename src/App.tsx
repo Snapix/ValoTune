@@ -413,7 +413,7 @@ function AppDownloads() {
         <p>After you download <strong>valotune.apk</strong>, Android may show a Google Play Protect warning because the app was downloaded outside the Play Store.</p>
         <p>If the APK came from ValoTune’s official download link, review the warning and app details, then choose <strong>Continue installing</strong> if you want to proceed. Don’t install APKs from unknown sources.</p>
         <small className="android-notice-assurance">Built with Capacitor.js — ValoTune’s web experience packaged for Android.</small>
-        <a className="android-notice-continue" href="https://github.com/Snapix/ValoTune/actions/workflows/android-apk.yml" target="_blank" rel="noreferrer" onClick={() => setShowAndroidNotice(false)}>Continue to APK download <span>↗</span></a>
+        <a className="android-notice-continue" href="https://github.com/Snapix/ValoTune/releases/tag/Native_app" target="_blank" rel="noreferrer" onClick={() => setShowAndroidNotice(false)}>Continue to APK download <span>↗</span></a>
       </section>
     </div>}
   </section>;

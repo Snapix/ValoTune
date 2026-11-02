@@ -41,37 +41,60 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate ValoTune Android launcher assets
+      - name: Build web app
+        run: npm run build
+
+      # Create the native project first. Generating assets before cap add can
+      # allow cap add to recreate the Android project with default icons.
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Generate official ValoTune launcher assets
         run: |
           mkdir -p assets
           npm install --no-save sharp @capacitor/assets
           node --input-type=module <<'NODE'
           import sharp from 'sharp';
           import { readFile } from 'node:fs/promises';
-          const svg = await readFile('public/valotune-icon.svg');
-          await sharp(svg).resize(1024, 1024, { fit: 'contain' }).png().toFile('assets/icon.png');
-          await sharp(svg).resize(1024, 1024, { fit: 'contain' }).png().toFile('assets/splash.png');
+
+          const source = 'public/valotune-icon.svg';
+          const svg = await readFile(source);
+          await sharp(svg)
+            .resize(1024, 1024, { fit: 'contain' })
+            .png()
+            .toFile('assets/icon.png');
+
+          console.log(`Generated Android icon from ${source}`);
           NODE
-          npx capacitor-assets generate --android --iconBackgroundColor '#0a0a0c' --splashBackgroundColor '#0a0a0c'
+          npx capacitor-assets generate --android --iconBackgroundColor '#0a0a0c'
 
-      - name: Build web app
-        run: npm run build
-
-      - name: Add Android platform
-        run: npx cap add android
+          echo "Generated launcher resources:"
+          find android/app/src/main/res -type f \\( -path '*/mipmap-*/*' -o -path '*/drawable*/ic_launcher*' \\) | sort
 
       - name: Sync Capacitor
         run: npx cap sync android
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew --no-daemon clean assembleDebug
 
-      - name: Verify debug APK
+      - name: Verify launcher icon is packaged in APK
         run: |
+          set -euo pipefail
           APK=android/app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
-          echo "Debug APK size: $(du -h "$APK" | cut -f1)"
+
+          echo "APK size: $(du -h "$APK" | cut -f1)"
+          echo "Launcher icon declaration:"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt" dump badging "$APK" | grep -E "^application:.*icon="
+
+          echo "Packaged launcher resources:"
+          unzip -Z1 "$APK" | grep -E '^res/(mipmap[^/]*/|drawable[^/]*/)(ic_launcher|ic_launcher_round)' | sort
+
+          # Require both raster launcher artwork and adaptive launcher XML
+          # in the final APK, not merely successful asset generation.
+          unzip -Z1 "$APK" | grep -Eq '^res/mipmap[^/]*/ic_launcher[^/]*\\.(webp|png)$'
+          unzip -Z1 "$APK" | grep -Eq '^res/mipmap-anydpi[^/]*/ic_launcher[^/]*\\.xml$'
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

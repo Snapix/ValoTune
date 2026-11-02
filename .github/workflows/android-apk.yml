@@ -44,8 +44,6 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      # Create the native project first. Generating assets before cap add can
-      # allow cap add to recreate the Android project with default icons.
       - name: Add Android platform
         run: npx cap add android
 
@@ -69,7 +67,7 @@ jobs:
           npx capacitor-assets generate --android --iconBackgroundColor '#0a0a0c'
 
           echo "Generated launcher resources:"
-          find android/app/src/main/res -type f \\( -path '*/mipmap-*/*' -o -path '*/drawable*/ic_launcher*' \\) | sort
+          find android/app/src/main/res -type f | grep -E '/mipmap-[^/]+/ic_launcher(_round|_foreground|_background)?\.' | sort
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -91,10 +89,8 @@ jobs:
           echo "Packaged launcher resources:"
           unzip -Z1 "$APK" | grep -E '^res/(mipmap[^/]*/|drawable[^/]*/)(ic_launcher|ic_launcher_round)' | sort
 
-          # Require both raster launcher artwork and adaptive launcher XML
-          # in the final APK, not merely successful asset generation.
-          unzip -Z1 "$APK" | grep -Eq '^res/mipmap[^/]*/ic_launcher[^/]*\\.(webp|png)$'
-          unzip -Z1 "$APK" | grep -Eq '^res/mipmap-anydpi[^/]*/ic_launcher[^/]*\\.xml$'
+          unzip -Z1 "$APK" | grep -Eq '^res/mipmap[^/]*/ic_launcher[^/]*\.(webp|png)$'
+          unzip -Z1 "$APK" | grep -Eq '^res/mipmap-anydpi[^/]*/ic_launcher[^/]*\.xml$'
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

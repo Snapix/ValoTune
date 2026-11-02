@@ -41,6 +41,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate ValoTune Android launcher assets
+        run: |
+          mkdir -p assets
+          npm install --no-save sharp @capacitor/assets
+          node --input-type=module <<'NODE'
+          import sharp from 'sharp';
+          import { readFile } from 'node:fs/promises';
+          const svg = await readFile('public/valotune-icon.svg');
+          await sharp(svg).resize(1024, 1024, { fit: 'contain' }).png().toFile('assets/icon.png');
+          await sharp(svg).resize(1024, 1024, { fit: 'contain' }).png().toFile('assets/splash.png');
+          NODE
+          npx capacitor-assets generate --android --iconBackgroundColor '#0a0a0c' --splashBackgroundColor '#0a0a0c'
+
       - name: Build web app
         run: npm run build
 

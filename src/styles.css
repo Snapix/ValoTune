@@ -342,3 +342,19 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 .top .logo .logo-bloub{position:static;display:block;width:100%;height:100%;object-fit:contain;animation:none;transform:none}
 .home-brand-mark{display:block;width:clamp(104px,12vw,154px);height:clamp(104px,12vw,154px);object-fit:contain;flex:0 0 auto;opacity:.96;filter:drop-shadow(0 14px 30px #0005)}
 @media(max-width:620px){.home-brand-mark{width:76px;height:76px;align-self:flex-start}}
+
+
+/* Android APK install guidance dialog */
+.android-notice-backdrop{position:fixed;z-index:10000;inset:0;display:grid;place-items:center;padding:20px;background:#000b;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:androidNoticeFade .18s ease both}
+.android-notice{position:relative;width:min(100%,460px);padding:30px;border:1px solid #ffffff20;border-radius:22px;background:linear-gradient(155deg,#1b1b1f,#101012 72%);box-shadow:0 30px 100px #000b;animation:androidNoticeRise .22s cubic-bezier(.2,.8,.2,1) both}
+.android-notice-close{position:absolute;top:13px;right:15px;width:34px;height:34px;border:1px solid #ffffff1c;border-radius:50%;background:#ffffff0a;color:#eee;font-size:23px;line-height:1;cursor:pointer}
+.android-notice-kicker{color:var(--accent);font-size:9px;font-weight:850;letter-spacing:.18em}
+.android-notice h2{margin:12px 34px 14px 0;font-size:23px;line-height:1.2;letter-spacing:-.045em}
+.android-notice p{margin:0 0 12px;color:#b9b9c1;font-size:13px;line-height:1.7}
+.android-notice p strong{color:#f4f4f5}
+.android-notice-assurance{display:block;margin:19px 0 20px;padding-top:15px;border-top:1px solid #ffffff16;color:#85858f;font-size:10px;line-height:1.6}
+.android-notice-continue{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:0 16px;border-radius:12px;background:#f2f2f3;color:#111114;font-size:12px;font-weight:800;text-decoration:none;transition:transform .18s ease,background .18s ease}
+.android-notice-continue:hover{transform:translateY(-1px);background:#fff}
+@keyframes androidNoticeFade{from{opacity:0}to{opacity:1}}
+@keyframes androidNoticeRise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.android-notice-backdrop,.android-notice{animation:none}.android-notice-continue{transition:none}}

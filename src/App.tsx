@@ -352,6 +352,7 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
 
 
 function AppDownloads() {
+  const [showAndroidNotice, setShowAndroidNotice] = useState(false);
   return <section className="app-downloads">
     <div className="app-download-hero">
       <div className="app-hero-copy">
@@ -378,7 +379,7 @@ function AppDownloads() {
         <div className="download-icon download-icon-android"><img src="/platform-icons/android.svg" alt="" /></div>
         <h3>ValoTune for Android</h3>
         <p>Take your listening experience with you. Install ValoTune directly on your Android device.</p>
-        <a className="download-action" href="https://github.com/Snapix/ValoTune/actions/workflows/android-apk.yml" target="_blank" rel="noreferrer">Get the Android APK <span>↗</span></a>
+        <button className="download-action" type="button" onClick={() => setShowAndroidNotice(true)}>Get the Android APK <span>↗</span></button>
         <small className="download-note">Current build: debug APK · Download the latest successful workflow artifact.</small>
         <span className="download-featured-watermark" aria-hidden="true">01</span>
       </article>
@@ -404,5 +405,16 @@ function AppDownloads() {
       </article>
     </div>
     <div className="app-download-footer"><img className="app-footer-mark" src="/valotune-icon.svg" alt="" /><p>Made for the way you listen.<br /><strong>ValoTune, wherever you are.</strong></p><span className="app-footer-equalizer"><i /><i /><i /><i /><i /></span></div>
+    {showAndroidNotice && <div className="android-notice-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowAndroidNotice(false); }}>
+      <section className="android-notice" role="dialog" aria-modal="true" aria-labelledby="android-notice-title">
+        <button className="android-notice-close" type="button" aria-label="Close" onClick={() => setShowAndroidNotice(false)}>×</button>
+        <span className="android-notice-kicker">BEFORE YOU INSTALL</span>
+        <h2 id="android-notice-title">A quick note about Android installation</h2>
+        <p>After you download <strong>valotune.apk</strong>, Android may show a Google Play Protect warning because the app was downloaded outside the Play Store.</p>
+        <p>If the APK came from ValoTune’s official download link, review the warning and app details, then choose <strong>Continue installing</strong> if you want to proceed. Don’t install APKs from unknown sources.</p>
+        <small className="android-notice-assurance">Built with Capacitor.js — ValoTune’s web experience packaged for Android.</small>
+        <a className="android-notice-continue" href="https://github.com/Snapix/ValoTune/actions/workflows/android-apk.yml" target="_blank" rel="noreferrer" onClick={() => setShowAndroidNotice(false)}>Continue to APK download <span>↗</span></a>
+      </section>
+    </div>}
   </section>;
 }

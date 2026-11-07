@@ -389,3 +389,38 @@ body{background:#121212;color:var(--ink)}
 .mobile-nav{display:none}
 @media(max-width:900px){.app{padding-left:0}.sidebar{display:none}.top{padding:0 18px}.mobile-brand{display:block}.top-actions{gap:4px}.top-nav{display:none}.content{padding:18px 20px 34px}.player{left:0}.artist-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:620px){:root{--player-h:132px}.top{height:58px}.round-nav{display:none}.content{padding:18px 14px 24px}.hero-row{margin-bottom:24px}.hero-row h1,.page-heading{font-size:22px}.player{bottom:48px;min-height:84px;grid-template-columns:minmax(0,1fr) auto;padding:8px 12px}.mobile-nav{display:flex;position:fixed;z-index:50;left:0;right:0;bottom:0;height:58px;padding:5px 8px calc(5px + env(safe-area-inset-bottom));background:#000;border:0}.mobile-nav button{color:#b3b3b3}.mobile-nav button.active{color:#fff}.mobile-nav button span{font-size:18px}.mobile-nav button small{font-size:9px}.card{flex-basis:142px}}
+
+/* Home collision fixes: keep navigation layers separate and give shelves deterministic space. */
+@media(min-width:901px){
+  .top{margin-left:232px;padding-left:24px;padding-right:28px}
+  .top-actions{width:100%;justify-content:flex-start;margin-left:0}
+  .top-nav{display:none!important}
+  .content{padding-top:24px}
+}
+.hero-row{position:relative;display:flex;align-items:flex-end;min-height:64px}
+.hero-row>div{min-width:0}
+.shelf{position:relative;min-width:0}
+.section-title{min-height:30px}
+.section-title>div{min-width:0}
+.section-title h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.section-title>span{flex:0 0 auto}
+.scroller{min-width:0;overscroll-behavior-x:contain}
+.card{overflow:visible}
+.cover-wrap{min-width:0}
+@media(max-width:900px){
+  .hero-row{min-height:54px}
+  .top{width:100%;overflow:hidden}
+  .top-actions{min-width:0}
+  .top-actions .top-nav{display:none!important}
+}
+@media(max-width:620px){
+  .hero-row{min-height:48px}
+  .hero-row h1{max-width:calc(100vw - 28px)}
+  .section-title{align-items:center;min-height:28px}
+  .section-title h2{max-width:72vw}
+  .section-title>span{font-size:10px}
+  .mobile-nav button small{display:block}
+  .app[data-nav-labels="false"] .mobile-nav button small{display:none}
+  .app[data-nav-labels="false"] .mobile-nav button{padding-top:8px}
+  .content{padding-bottom:30px}
+}

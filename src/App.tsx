@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import ElasticSlider from './components/ElasticSlider';
-import GooeyNav from './components/GooeyNav';
+import PillNav from './components/PillNav/PillNav';
 import BlurText from './components/BlurText';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
@@ -32,7 +32,7 @@ export default function App() {
   const nativeApp = Capacitor.isNativePlatform();
   const showAppMenu = !nativeApp && !installedPwa;
   useEffect(() => { if (!showAppMenu && tab === 4) setTab(0); }, [showAppMenu, tab]);
-  const navItems = (showAppMenu ? TABS : TABS.slice(0, 4)).map(label => ({ label }));
+  const navItems = (showAppMenu ? TABS : TABS.slice(0, 4)).map(label => ({ label, href: `/${label.toLowerCase()}` }));
   const [pendingSearch, setPendingSearch] = useState('');
   useEffect(() => {
     const media = window.matchMedia('(display-mode: standalone)');
@@ -75,21 +75,6 @@ export default function App() {
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
-    <aside className="sidebar" aria-label="Primary navigation">
-      <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
-      <nav className="side-nav" aria-label="Main navigation">
-        {navItems.map((item, index) => <button key={item.label} className={index === tab ? 'is-active' : ''} onClick={() => setTab(index)} aria-current={index === tab ? 'page' : undefined}><span className="side-nav-icon" aria-hidden="true">{['⌂','▣','⌕','⚙','↓'][index]}</span><span>{item.label}</span></button>)}
-      </nav>
-      <div className="sidebar-footer"><span>VALOTUNE</span><small>Music, without the clutter.</small></div>
-    </aside>
-    <header className="top">
-      <div className="mobile-brand"><button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button></div>
-      <div className="top-actions">
-        <button className="round-nav" onClick={() => setTab(Math.max(0, tab - 1))} aria-label="Previous section">‹</button>
-        <button className="round-nav" onClick={() => setTab(Math.min(navItems.length - 1, tab + 1))} aria-label="Next section">›</button>
-        <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame={false} particleCount={0} spread={0} animationTime={200} timeVariance={0} gooeyness={0} wobble={0} hoverEffect={false} className="top-nav" />
-      </div>
-    </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
@@ -132,9 +117,6 @@ export default function App() {
         <LyricsPanel song={player.current} time={player.time} provider={settings.lyricsProvider} />
       </div>
     </section>}
-    <nav className="mobile-nav" aria-label="Mobile navigation">
-      {navItems.slice(0, 4).map((item, index) => <button key={item.label} className={index === tab ? 'active' : ''} onClick={() => setTab(index)} aria-current={index === tab ? 'page' : undefined}><span aria-hidden="true">{['⌂','▣','⌕','⚙'][index]}</span><small>{item.label}</small></button>)}
-    </nav>
     {toast && <div className="toast" role="status">{toast}</div>}
   </div>;
 }

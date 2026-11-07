@@ -75,6 +75,27 @@ export default function App() {
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
+    <header className="top" aria-label="ValoTune navigation">
+      <PillNav
+        logo="/valotune-icon.svg"
+        logoAlt="ValoTune"
+        logoHref="/"
+        items={navItems}
+        activeHref={navItems[tab]?.href || "/home"}
+        itemStyle="pill"
+        hoverEffect="glide"
+        indicator="pill"
+        bounce={1}
+        collapse="never"
+        size="md"
+        surface="glass"
+        theme="dark"
+        onItemClick={(item, index, event) => {
+          event.preventDefault();
+          setTab(index);
+        }}
+      />
+    </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}

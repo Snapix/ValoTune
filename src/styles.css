@@ -455,3 +455,57 @@ body{background:#121212;color:var(--ink)}
   .top{padding:10px 12px;min-height:58px;overflow:visible}
   .top > .pill-nav{width:auto;max-width:100%}
 }
+
+
+/* Mobile overflow hardening — keep the App/download page inside the viewport. */
+html,body,#root,.app{max-width:100%;min-width:0;overflow-x:hidden}
+.content{min-width:0;box-sizing:border-box}
+.app-downloads{width:100%;max-width:100%;min-width:0;overflow:hidden}
+.app-download-hero{min-width:0;box-sizing:border-box}
+.app-hero-copy{min-width:0}
+.download-grid,.download-card,.app-section-heading,.app-download-footer{min-width:0;max-width:100%;box-sizing:border-box}
+
+@media(max-width:620px){
+  .content{width:100%;padding-left:14px;padding-right:14px}
+  .app-downloads{width:100%}
+  .app-download-hero{
+    width:100%;
+    min-height:0;
+    margin-bottom:32px;
+    padding:30px 22px 170px;
+    display:block;
+    border-radius:24px;
+  }
+  .app-hero-copy{width:100%;max-width:none}
+  .app-kicker{max-width:100%;line-height:1.5}
+  .app-hero-title{
+    max-width:100%;
+    margin:16px 0 12px;
+    font-size:clamp(38px,11vw,48px);
+    line-height:.98;
+    overflow-wrap:anywhere;
+  }
+  .app-hero-sub{max-width:100%;font-size:12px;line-height:1.7}
+  .app-download-hero .app-hero-orbit{
+    width:220px;
+    height:220px;
+    right:-54px;
+    top:auto;
+    bottom:-52px;
+    transform:none;
+    opacity:.42;
+  }
+  .app-download-hero .app-orbit-ring-one{width:180px;height:100px}
+  .app-download-hero .app-orbit-ring-two{width:160px;height:160px}
+  .app-orbit-disc.app-orbit-bloub{width:112px;height:112px}
+  .app-section-heading{
+    width:100%;
+    flex-wrap:wrap;
+  }
+  .download-grid{width:100%;grid-template-columns:minmax(0,1fr)}
+  .download-card,.download-card:last-child{
+    width:100%;
+    min-width:0;
+    padding:20px;
+  }
+}

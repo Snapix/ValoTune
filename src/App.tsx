@@ -32,7 +32,7 @@ export default function App() {
   const nativeApp = Capacitor.isNativePlatform();
   const showAppMenu = !nativeApp && !installedPwa;
   useEffect(() => { if (!showAppMenu && tab === 4) setTab(0); }, [showAppMenu, tab]);
-  const navItems = (showAppMenu ? TABS : TABS.slice(0, 4)).map(label => ({ label, href: `/${label.toLowerCase()}` }));
+  const navItems = TABS.map(label => ({ label, href: `/${label.toLowerCase()}` }));
   const [pendingSearch, setPendingSearch] = useState('');
   useEffect(() => {
     const media = window.matchMedia('(display-mode: standalone)');
@@ -100,7 +100,7 @@ export default function App() {
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
-      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}\n      {tab === 4 && showAppMenu && <AppDownloads />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}\n      {tab === 4 && <AppDownloads />}
     </main>
     <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>
     {player.current && <footer className="player" aria-label="Music player" onClick={event => {

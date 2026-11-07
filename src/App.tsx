@@ -75,9 +75,20 @@ export default function App() {
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
-    <header className="top">
+    <aside className="sidebar" aria-label="Primary navigation">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
-      <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
+      <nav className="side-nav" aria-label="Main navigation">
+        {navItems.map((item, index) => <button key={item.label} className={index === tab ? 'is-active' : ''} onClick={() => setTab(index)} aria-current={index === tab ? 'page' : undefined}><span className="side-nav-icon" aria-hidden="true">{['⌂','▣','⌕','⚙','↓'][index]}</span><span>{item.label}</span></button>)}
+      </nav>
+      <div className="sidebar-footer"><span>VALOTUNE</span><small>Music, without the clutter.</small></div>
+    </aside>
+    <header className="top">
+      <div className="mobile-brand"><button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button></div>
+      <div className="top-actions">
+        <button className="round-nav" onClick={() => setTab(Math.max(0, tab - 1))} aria-label="Previous section">‹</button>
+        <button className="round-nav" onClick={() => setTab(Math.min(navItems.length - 1, tab + 1))} aria-label="Next section">›</button>
+        <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame={false} particleCount={0} spread={0} animationTime={200} timeVariance={0} gooeyness={0} wobble={0} hoverEffect={false} className="top-nav" />
+      </div>
     </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
@@ -121,6 +132,9 @@ export default function App() {
         <LyricsPanel song={player.current} time={player.time} provider={settings.lyricsProvider} />
       </div>
     </section>}
+    <nav className="mobile-nav" aria-label="Mobile navigation">
+      {navItems.slice(0, 4).map((item, index) => <button key={item.label} className={index === tab ? 'active' : ''} onClick={() => setTab(index)} aria-current={index === tab ? 'page' : undefined}><span aria-hidden="true">{['⌂','▣','⌕','⚙'][index]}</span><small>{item.label}</small></button>)}
+    </nav>
     {toast && <div className="toast" role="status">{toast}</div>}
   </div>;
 }
@@ -136,7 +150,7 @@ function Home(v: ViewProps & { recent: Song[]; onExplore: (term: string) => void
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   return <section>
-    <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><img className="home-brand-mark" src="/valotune-icon.svg" alt="ValoTune" /></div>
+    <div className="hero-row"><div><small className="eyebrow">{greeting.toUpperCase()}</small><h1>What do you want to<br /><em>listen to?</em></h1></div></div>
     {v.recent.length > 0 && <Shelf section={{ title: "Continue listening", songs: v.recent.slice(0, 12) }} {...v} /> }
     {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home').then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
     {!sections && !error && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div className="sk" key={i} />)}</div>}

@@ -358,3 +358,16 @@ body{background-image:var(--page-ambient,radial-gradient(ellipse 900px 420px at 
 @keyframes androidNoticeFade{from{opacity:0}to{opacity:1}}
 @keyframes androidNoticeRise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.android-notice-backdrop,.android-notice{animation:none}.android-notice-continue{transition:none}}
+
+
+/* Runtime performance guardrails. */
+html{scroll-behavior:auto}
+body{background-attachment:scroll}
+.top,.player{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+[data-reduce-motion="true"] *,[data-reduce-motion="true"] *::before,[data-reduce-motion="true"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@media(max-width:620px){
+  .top,.player{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .top,.player{backdrop-filter:none;-webkit-backdrop-filter:none}
+}

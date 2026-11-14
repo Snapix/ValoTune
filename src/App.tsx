@@ -5,6 +5,7 @@ import GooeyNav from './components/GooeyNav';
 import BlurText from './components/BlurText';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
+import './stability.css';
 import { useLocal } from './store';
 import { fmt, type Artist, type Section, type Settings, type Song } from './types';
 
@@ -13,9 +14,9 @@ const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'El
 const TABS = ['Home', 'Library', 'Discover', 'Settings', 'App'];
 type SearchData = { songs: Song[]; artists: Artist[] };
 type ViewProps = { play: (song: Song, list?: Song[]) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
-const api = async <T,>(url: string): Promise<T> => {
+const api = async <T,>(url: string, signal?: AbortSignal): Promise<T> => {
   const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-  const response = await fetch(`${apiBase}${url}`);
+  const response = await fetch(`${apiBase}${url}`, { signal });
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try { message = (await response.json()).error || message; } catch { /* ignore */ }
@@ -129,9 +130,16 @@ function Home(v: ViewProps & { recent: Song[]; onExplore: (term: string) => void
   const [sections, setSections] = useState<Section[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
+    const controller = new AbortController();
     let active = true;
-    api<Section[]>('/api/home').then(data => { if (active) setSections(data); }).catch(e => { if (active) setError(e.message); });
-    return () => { active = false; };
+    const artists = [...new Set(v.recent.map(song => song.artist).filter(Boolean))].slice(0, 3);
+    const params = artists.length ? '?artists=' + encodeURIComponent(artists.join('|')) : '';
+    api<Section[]>('/api/home' + params, controller.signal).then(data => {
+      if (active) setSections(data);
+    }).catch(e => {
+      if (active && e.name !== 'AbortError') setError(e.message);
+    });
+    return () => { active = false; controller.abort(); };
   }, []);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';

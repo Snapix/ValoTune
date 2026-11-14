@@ -94,15 +94,23 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
 
   useEffect(() => {
     let cancelled = false;
-    const interval = window.setInterval(() => {
-      if (!ready.current || !player.current) return;
-      try {
-        const t = player.current.getCurrentTime();
-        const d = player.current.getDuration();
-        if (Number.isFinite(t)) setTime(t);
-        if (Number.isFinite(d) && d > 0) setDuration(d);
-      } catch { /* player may still be initializing */ }
-    }, 500);
+    let frame = 0;
+    let lastTick = 0;
+    const tick = (now: number) => {
+      if (now - lastTick >= 750) {
+        lastTick = now;
+        if (ready.current && player.current && player.current.getPlayerState?.() === window.YT?.PlayerState?.PLAYING) {
+          try {
+            const t = player.current.getCurrentTime();
+            const d = player.current.getDuration();
+            if (Number.isFinite(t)) setTime(t);
+            if (Number.isFinite(d) && d > 0) setDuration(d);
+          } catch { /* player may still be initializing */ }
+        }
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
 
     loadYouTubeApi().then(() => {
       if (cancelled || !host.current || !window.YT?.Player) return;
@@ -139,7 +147,7 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
     }).catch(error => console.warn(error.message));
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      window.cancelAnimationFrame(frame);
       ready.current = false;
       try { player.current?.destroy(); } catch { /* ignore teardown errors */ }
       player.current = null;

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import ElasticSlider from './components/ElasticSlider';
 import GooeyNav from './components/GooeyNav';
-import BlurText from './components/BlurText';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
 import './stability.css';
@@ -78,7 +77,7 @@ export default function App() {
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
-      <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={16} spread={56} animationTime={700} timeVariance={220} gooeyness={0.8} wobble={0.75} hoverEffect className="top-nav" />
+      <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={0} spread={0} animationTime={320} timeVariance={0} gooeyness={0} wobble={0} hoverEffect={false} className="top-nav" />
     </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
@@ -146,7 +145,7 @@ function Home(v: ViewProps & { recent: Song[]; onExplore: (term: string) => void
   return <section>
     <div className="hero-row"><div><small className="eyebrow">YOUR SOUND, YOUR WAY</small><h1>{greeting}<br /><em>find your next favourite.</em></h1><p className="sub">Real songs, real artists. Pick a sound and press play.</p></div><img className="home-brand-mark" src="/valotune-icon.svg" alt="ValoTune" /></div>
     {v.recent.length > 0 && <Shelf section={{ title: "Continue listening", songs: v.recent.slice(0, 12) }} {...v} /> }
-    {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home').then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
+    {error && <div className="notice" role="alert"><b>Music is taking a moment.</b><span>{error}</span><button onClick={() => { setError(''); setSections(null); api<Section[]>('/api/home' + (() => { const artists = [...new Set(v.recent.map(song => song.artist).filter(Boolean))].slice(0, 3); return artists.length ? '?artists=' + encodeURIComponent(artists.join('|')) : ''; })()).then(setSections).catch(e => setError(e.message)); }}>Retry</button></div>}
     {!sections && !error && <div className="skeleton-row">{Array.from({ length: 6 }, (_, i) => <div className="sk" key={i} />)}</div>}
     {v.showHomeShelves && sections?.map(section => <Shelf key={section.title} section={section} {...v} />)}
     {v.showGenres && <section className="genre-section"><div className="section-title"><div><small className="eyebrow">FOLLOW THE FEELING</small><h2>Explore by mood</h2></div></div><div className="genre-grid">{GENRES.map((genre, i) => <button key={genre} className={`genre genre-${i % 6}`} onClick={() => v.onExplore(genre + ' songs')}><span>{['✦','◉','☾','↗','♫','♡'][i % 6]}</span>{genre}<b>↗</b></button>)}</div></section>}
@@ -173,16 +172,25 @@ function Discover(v: ViewProps & { notify: (message: string) => void; initialQue
   const [filter, setFilter] = useState<'songs' | 'artists'>('songs');
   const [recentTerms, setRecentTerms] = useState<string[]>([]);
   const timer = useRef<number | undefined>(undefined);
+  const searchController = useRef<AbortController | null>(null);
+  const suggestionController = useRef<AbortController | null>(null);
   const run = useCallback(async (term: string) => {
     const value = term.trim();
     if (!value) return;
     setQuery(value); setSuggestions([]); setBusy(true); setError('');
+    searchController.current?.abort();
+    const controller = new AbortController();
+    searchController.current = controller;
     try {
-      const data = await api<SearchData>('/api/search?q=' + encodeURIComponent(value));
+      const data = await api<SearchData>('/api/search?q=' + encodeURIComponent(value), controller.signal);
       setResult({ songs: data.songs || [], artists: data.artists || [] });
       setRecentTerms(items => [value, ...items.filter(item => item.toLowerCase() !== value.toLowerCase())].slice(0, 6));
-    } catch (e) { setError(e instanceof Error ? e.message : 'Search failed.'); setResult(null); }
-    finally { setBusy(false); }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      setError(e instanceof Error ? e.message : 'Search failed.'); setResult(null);
+    } finally {
+      if (searchController.current === controller) setBusy(false);
+    }
   }, []);
   useEffect(() => {
     if (v.initialQuery) { setQuery(v.initialQuery); void run(v.initialQuery); }
@@ -191,8 +199,15 @@ function Discover(v: ViewProps & { notify: (message: string) => void; initialQue
     window.clearTimeout(timer.current);
     const value = query.trim();
     if (value.length < 2) { setSuggestions([]); return; }
-    timer.current = window.setTimeout(() => { api<string[]>('/api/suggest?q=' + encodeURIComponent(value)).then(setSuggestions).catch(() => setSuggestions([])); }, 280);
-    return () => window.clearTimeout(timer.current);
+    suggestionController.current?.abort();
+    const controller = new AbortController();
+    suggestionController.current = controller;
+    timer.current = window.setTimeout(() => {
+      api<string[]>('/api/suggest?q=' + encodeURIComponent(value), controller.signal).then(setSuggestions).catch(error => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) setSuggestions([]);
+      });
+    }, 280);
+    return () => { window.clearTimeout(timer.current); controller.abort(); };
   }, [query]);
   const songs = result?.songs || [];
   return <section className="discover-page">
@@ -353,7 +368,7 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
     {status === 'error' && <div className="lyrics-state"><p>Lyrics couldn’t be loaded right now.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
     {status === 'empty' && <div className="lyrics-state">{record?.instrumental ? 'This track is marked as instrumental.' : 'No lyrics found for this track.'}</div>}
-    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')}>{line.time !== null && <span className="lyrics-timestamp" aria-label={'Timestamp ' + formatLyricTimestamp(line.time)}>{formatLyricTimestamp(line.time)}</span>}<BlurText text={line.text} effect="drift" animateBy="words" direction="left" staggerFrom="start" trigger="view" delay={75} stepDuration={0.42} blur={8} distance={28} className="lyrics-line-text" /></div>)}</div>}
+    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')}>{line.time !== null && <span className="lyrics-timestamp" aria-label={'Timestamp ' + formatLyricTimestamp(line.time)}>{formatLyricTimestamp(line.time)}</span>}<span className="lyrics-line-text">{line.text}</span></div>)}</div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

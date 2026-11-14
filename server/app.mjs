@@ -112,15 +112,37 @@ const HOME = [
   { title: 'Late night drive', query: 'late night drive songs' }
 ];
 
-app.get('/api/home', async (_req, res) => {
+app.get('/api/home', async (req, res) => {
   try {
-    const sections = await cached('home-v2', 15 * 60_000, async () => {
+    const artists = String(req.query.artists || '')
+      .split('|')
+      .map(value => value.trim().slice(0, 80))
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const cacheKey = artists.length ? 'home-personal:' + artists.map(a => a.toLowerCase()).sort().join('|') : 'home-v2';
+    const sections = await cached(cacheKey, 15 * 60_000, async () => {
       await ensureReady();
-      return Promise.all(HOME.map(async section => {
+
+      const personalized = artists.length
+        ? await Promise.all(artists.slice(0, 2).map(async artistName => {
+            const songs = await yt.searchSongs(artistName + ' songs');
+            return {
+              title: 'Because you listened to ' + artistName,
+              songs: (Array.isArray(songs) ? songs : []).filter(s => s?.videoId).slice(0, 12).map(normalizeSong)
+            };
+          }))
+        : [];
+
+      const base = await Promise.all(HOME.map(async section => {
         const songs = await yt.searchSongs(section.query);
         return { title: section.title, songs: (Array.isArray(songs) ? songs : []).filter(s => s?.videoId).slice(0, 12).map(normalizeSong) };
       }));
+
+      return [...personalized, ...base];
     });
+
+    res.set('Cache-Control', 'private, max-age=0, stale-while-revalidate=60');
     return res.json(sections);
   } catch (error) {
     console.error('Home collections failed:', error?.message || error);

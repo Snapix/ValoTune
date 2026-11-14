@@ -22,3 +22,11 @@
 @media(max-width:900px){.gooey-nav{gap:2px}.gooey-nav button{--gn-x:12px;--gn-y:9px}}
 @media(max-width:620px){.gooey-nav{display:flex;width:100%;justify-content:space-between;gap:2px;padding:4px}.gooey-nav button{flex:1;min-width:0;padding:9px 5px;font-size:11px}.gooey-nav__pill{max-width:calc(100% - 8px)}}
 @media(prefers-reduced-motion:reduce){.gooey-nav *, .gooey-nav *:before,.gooey-nav *:after{animation:none!important;transition:none!important}}
+
+
+/* Performance-safe navigation: keep the pill, remove SVG filter/compositing work. */
+.gooey-nav__pill{filter:none;box-shadow:none}
+.gooey-nav__pill:after{display:none}
+.gooey-nav__spark,.gooey-nav__hover{display:none}
+.gooey-nav button{transition:color .16s ease}
+@media(prefers-reduced-motion:reduce){.gooey-nav button{transition:none}}

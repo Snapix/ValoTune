@@ -108,21 +108,74 @@ export default function App() {
     </footer>}
     {fullscreenPlayer && player.current && <section className="fullscreen-player" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
       <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><CloseIcon size={24} /><span>Minimize</span></button>
-      <div className="fullscreen-inner">
-        <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
-        <div className="fullscreen-track"><small>NOW PLAYING</small><h1>{player.current.name || 'Unknown track'}</h1><p>{player.current.artist || 'Unknown artist'}</p></div>
-        <div className="fullscreen-seek"><div className="fullscreen-time"><span>{fmt(player.time)}</span><span>{fmt(player.duration)}</span></div><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /></div>
-        <div className="fullscreen-controls">
-          <button className="fullscreen-icon" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={32} /></button>
-          <button className="fullscreen-play" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? <PauseIcon size={32} /> : <PlayIcon size={32} />}</button>
-          <button className="fullscreen-icon" onClick={player.next} aria-label="Next track"><NextIcon size={32} /></button>
-        </div>
-        <div className="fullscreen-volume"><VolumeIcon size={20} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
-        <LyricsPanel song={player.current} time={player.time} provider={settings.lyricsProvider} />
+      <div className="fullscreen-layout">
+        <aside className="fullscreen-left">
+          <div className="fullscreen-panel-switcher" role="tablist" aria-label="Player panels">
+            <button className="fullscreen-panel-tab active" role="tab" aria-selected="true">Queue & Lyrics</button>
+          </div>
+          <FullscreenPanels player={player} settings={settings} setPreference={setPreference} />
+        </aside>
+        <section className="fullscreen-right">
+          <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
+          <div className="fullscreen-track"><small>NOW PLAYING</small><h1>{player.current.name || 'Unknown track'}</h1><p>{player.current.artist || 'Unknown artist'}</p></div>
+          <div className="fullscreen-seek"><div className="fullscreen-time"><span>{fmt(player.time)}</span><span>{fmt(player.duration)}</span></div><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /></div>
+          <div className="fullscreen-controls">
+            <button className="fullscreen-icon" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={32} /></button>
+            <button className="fullscreen-play" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? <PauseIcon size={32} /> : <PlayIcon size={32} />}</button>
+            <button className="fullscreen-icon" onClick={player.next} aria-label="Next track"><NextIcon size={32} /></button>
+          </div>
+          <div className="fullscreen-volume"><VolumeIcon size={20} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
+        </section>
       </div>
     </section>}
     {toast && <div className="toast" role="status">{toast}</div>}
   </div>;
+}
+
+function FullscreenPanels({ player, settings, setPreference }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void }) {
+  const [panel, setPanel] = useState<'queue' | 'lyrics'>('lyrics');
+  const items = [
+    { label: 'Lyrics', value: 'lyrics' as const },
+    { label: 'Queue', value: 'queue' as const },
+  ];
+  return <div className="fullscreen-panel-body">
+    <GooeyNav
+      items={items.map(item => ({ label: item.label }))}
+      activeIndex={panel === 'lyrics' ? 0 : 1}
+      onChange={index => setPanel(items[index]?.value || 'lyrics')}
+      color="var(--accent)"
+      size="sm"
+      frame
+      particleCount={0}
+      spread={0}
+      animationTime={280}
+      timeVariance={0}
+      gooeyness={0}
+      wobble={0}
+      hoverEffect={false}
+      className="fullscreen-panel-nav"
+    />
+    {panel === 'queue'
+      ? <QueuePanel player={player} />
+      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} />}
+  </div>;
+}
+
+function QueuePanel({ player }: { player: ReturnType<typeof usePlayer> }) {
+  return <section className="queue-panel" aria-label="Up next queue">
+    <div className="queue-heading"><div><small>UP NEXT</small><h2>Queue</h2></div><span>{player.queue.length} tracks</span></div>
+    {player.queue.length ? <div className="queue-list">
+      {player.queue.map((song, index) => {
+        const active = song.videoId === player.current?.videoId;
+        return <button className={'queue-item' + (active ? ' is-current' : '')} key={song.videoId + '-' + index} onClick={() => player.play(song, player.queue)} aria-current={active ? 'true' : undefined}>
+          <span className="queue-index">{active && player.playing ? 'Ⅱ' : String(index + 1).padStart(2, '0')}</span>
+          <img src={song.thumb} alt="" loading="lazy" />
+          <span className="queue-info"><b>{song.name}</b><small>{song.artist}</small></span>
+          <span className="queue-duration">{fmt(song.duration)}</span>
+        </button>;
+      })}
+    </div> : <div className="lyrics-state">Nothing queued yet. Play a track from a shelf to build your queue.</div>}
+  </section>;
 }
 
 function Home(v: ViewProps & { recent: Song[]; onExplore: (term: string) => void; showHomeShelves: boolean; showGenres: boolean }) {

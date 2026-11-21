@@ -1029,3 +1029,58 @@ body{background-attachment:scroll}
   .fullscreen-right .fullscreen-icon{width:38px!important;height:38px!important}
   .fullscreen-left{padding-top:9px!important}
 }
+
+
+/* Fullscreen track actions */
+.fullscreen-track-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:10px;
+}
+.fullscreen-track-action{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border:1px solid color-mix(in srgb,#fff 12%,transparent);
+  border-radius:50%;
+  background:color-mix(in srgb,#fff 6%,transparent);
+  color:var(--text);
+  cursor:pointer;
+  transition:background .18s ease,transform .18s ease,color .18s ease;
+}
+.fullscreen-track-action span{
+  font-size:18px;
+  line-height:1;
+}
+.fullscreen-track-action:hover{background:color-mix(in srgb,var(--accent) 16%,transparent);transform:translateY(-1px)}
+.fullscreen-track-action.is-liked{color:#ff6b8a;border-color:color-mix(in srgb,#ff6b8a 35%,transparent)}
+@media (max-width:620px){
+  /* Mobile should prioritize stable layout over cinematic motion. */
+  .fullscreen-player .fullscreen-liquid-surface{
+    opacity:.78!important;
+  }
+  .fullscreen-player .fullscreen-lyric-ambient span{
+    animation:none!important;
+    filter:none!important;
+    transform:none!important;
+    text-shadow:0 4px 24px #000!important;
+    will-change:auto!important;
+  }
+  .fullscreen-track-actions{
+    margin-top:7px!important;
+    gap:7px!important;
+  }
+  .fullscreen-track-action{
+    width:32px!important;
+    height:32px!important;
+    transition:none!important;
+  }
+  .fullscreen-right .fullscreen-track{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+  }
+}

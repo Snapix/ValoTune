@@ -147,27 +147,22 @@ export default function App() {
       </div>
       <div className="volume"><VolumeIcon size={20} aria-hidden="true" /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
     </footer>}
-    {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className={'fullscreen-player ' + (settings.playerTheme === 'liquid-glass' && !settings.reduceMotion ? 'fullscreen-liquid-enabled' : 'fullscreen-liquid-disabled')} data-player-theme={settings.playerTheme} role="dialog" aria-modal="true" aria-label="Fullscreen music player">
-      {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" style={{ backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%), url("${artwork(player.current)}")` }} aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
-      <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><CloseIcon size={24} /><span>Minimize</span></button>
-      <div className="fullscreen-layout">
-        <aside className="fullscreen-left">
-          <div className="fullscreen-panel-switcher" role="tablist" aria-label="Player panels">
-            <button className="fullscreen-panel-tab active" role="tab" aria-selected="true">Queue & Lyrics</button>
-          </div>
-          <FullscreenPanels player={player} settings={settings} setPreference={setPreference} />
-        </aside>
-        <section className="fullscreen-right">
-          <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
-          <div className="fullscreen-track"><small>NOW PLAYING</small><h1>{player.current.name || 'Unknown track'}</h1><p>{player.current.artist || 'Unknown artist'}</p></div>
-          <div className="fullscreen-seek"><div className="fullscreen-time"><span>{fmt(player.time)}</span><span>{fmt(player.duration)}</span></div><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /></div>
-          <div className="fullscreen-controls">
-            <button className="fullscreen-icon" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={32} /></button>
-            <button className="fullscreen-play" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? <PauseIcon size={32} /> : <PlayIcon size={32} />}</button>
-            <button className="fullscreen-icon" onClick={player.next} aria-label="Next track"><NextIcon size={32} /></button>
-          </div>
-          <div className="fullscreen-volume"><VolumeIcon size={20} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
-        </section>
+    {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className={'fullscreen-player fullscreen-immersive ' + (settings.playerTheme === 'liquid-glass' && !settings.reduceMotion ? 'fullscreen-liquid-enabled' : 'fullscreen-liquid-disabled')} data-player-theme={settings.playerTheme} role="dialog" aria-modal="true" aria-label="Fullscreen music player">
+      {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
+      <button className="fullscreen-close fullscreen-ai-minimize" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player">
+        <span className="ai-orb" aria-hidden="true"><i /><i /><i /></span>
+        <span className="ai-minimize-label">EXIT</span>
+      </button>
+      <FullscreenPanels player={player} settings={settings} setPreference={setPreference} />
+      <div className="fullscreen-controls-dock">
+        <div className="fullscreen-track"><small>NOW PLAYING</small><h1>{player.current.name || 'Unknown track'}</h1><p>{player.current.artist || 'Unknown artist'}</p></div>
+        <div className="fullscreen-seek"><div className="fullscreen-time"><span>{fmt(player.time)}</span><span>{fmt(player.duration)}</span></div><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /></div>
+        <div className="fullscreen-controls">
+          <button className="fullscreen-icon" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={28} /></button>
+          <button className="fullscreen-play" onClick={player.toggle} aria-label={player.playing ? 'Pause' : 'Play'}>{player.playing ? <PauseIcon size={30} /> : <PlayIcon size={30} />}</button>
+          <button className="fullscreen-icon" onClick={player.next} aria-label="Next track"><NextIcon size={28} /></button>
+        </div>
+        <div className="fullscreen-volume"><VolumeIcon size={18} /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
       </div>
     </section>}
     {toast && <div className="toast" role="status">{toast}</div>}
@@ -176,30 +171,34 @@ export default function App() {
 
 function FullscreenPanels({ player, settings, setPreference }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void }) {
   const [panel, setPanel] = useState<'queue' | 'lyrics'>('lyrics');
+  const [lyricsAvailable, setLyricsAvailable] = useState(false);
   const items = [
     { label: 'Lyrics', value: 'lyrics' as const },
     { label: 'Queue', value: 'queue' as const },
   ];
-  return <div className="fullscreen-panel-body">
-    <GooeyNav
-      items={items.map(item => ({ label: item.label }))}
-      activeIndex={panel === 'lyrics' ? 0 : 1}
-      onChange={index => setPanel(items[index]?.value || 'lyrics')}
-      color="var(--accent)"
-      size="sm"
-      frame
-      particleCount={0}
-      spread={0}
-      animationTime={280}
-      timeVariance={0}
-      gooeyness={0}
-      wobble={0}
-      hoverEffect={false}
-      className="fullscreen-panel-nav"
-    />
+  const showLyrics = panel === 'lyrics' && lyricsAvailable;
+  return <div className={'fullscreen-panel-body ' + (showLyrics ? 'has-lyrics' : 'menu-mode')}>
+    <div className="fullscreen-panel-nav-wrap">
+      <GooeyNav
+        items={items.map(item => ({ label: item.label }))}
+        activeIndex={panel === 'lyrics' ? 0 : 1}
+        onChange={index => setPanel(items[index]?.value || 'lyrics')}
+        color="var(--accent)"
+        size="sm"
+        frame
+        particleCount={0}
+        spread={0}
+        animationTime={280}
+        timeVariance={0}
+        gooeyness={0}
+        wobble={0}
+        hoverEffect={false}
+        className="fullscreen-panel-nav"
+      />
+    </div>
     {panel === 'queue'
       ? <QueuePanel player={player} />
-      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} />}
+      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} onAvailability={setLyricsAvailable} />}
   </div>;
 }
 
@@ -398,7 +397,7 @@ function parseLrc(value: string): LyricLine[] {
   }
   return lines.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
 }
-function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void }) {
+function LyricsPanel({ song, time, provider, onSeek, onAvailability }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void; onAvailability?: (available: boolean) => void }) {
   const [record, setRecord] = useState<LyricsRecord | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
@@ -452,6 +451,7 @@ function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: numbe
     return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
   }, [record]);
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
+  useEffect(() => { onAvailability?.(status === 'ready' && lines.length > 0); }, [status, lines.length, onAvailability]);
   useEffect(() => { activeLine.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [currentLine]);
   return <section className="lyrics-panel" aria-label="Song lyrics">
     <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>

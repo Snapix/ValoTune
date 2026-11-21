@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { LiquidGlass } from '@ybouane/liquidglass';
 import ElasticSlider from './components/ElasticSlider';
 import GooeyNav from './components/GooeyNav';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
@@ -42,11 +43,14 @@ export default function App() {
     update();
     return () => { media.removeEventListener?.('change', update); window.removeEventListener('appinstalled', update); };
   }, []);
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, playerTheme: 'liquid-glass', reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
   const [fullscreenPlayer, setFullscreenPlayer] = useState(false);
+  const fullscreenGlassRoot = useRef<HTMLElement | null>(null);
+  const fullscreenGlassSurface = useRef<HTMLDivElement | null>(null);
+  const fullscreenGlassInstance = useRef<Awaited<ReturnType<typeof LiquidGlass.init>> | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const onPlayed = useCallback((song: Song) => setRecent(items => [song, ...items.filter(item => item.videoId !== song.videoId)].slice(0, 50)), [setRecent]);
   const player = usePlayer(settings.volume, settings.autoplay, onPlayed);
@@ -65,6 +69,40 @@ export default function App() {
     document.documentElement.style.setProperty('--accent', settings.accent);
     return () => window.clearTimeout(toastTimer.current);
   }, [settings.accent, setSettings]);
+  useEffect(() => {
+    if (!fullscreenPlayer || settings.playerTheme !== 'liquid-glass' || settings.reduceMotion) return;
+    const root = fullscreenGlassRoot.current;
+    const glass = fullscreenGlassSurface.current;
+    if (!root || !glass) return;
+    let cancelled = false;
+    glass.dataset.config = JSON.stringify({
+      blurAmount: 0.22,
+      refraction: 0.72,
+      chromAberration: 0.035,
+      edgeHighlight: 0.08,
+      fresnel: 0.8,
+      cornerRadius: 0,
+      zRadius: 24,
+      opacity: 0.94,
+      saturation: 0.06,
+      brightness: 0.02,
+      shadowOpacity: 0.12,
+      shadowSpread: 18,
+      shadowOffsetY: 2,
+      floating: false,
+      button: false,
+      bevelMode: 0
+    });
+    void LiquidGlass.init({ root, glassElements: [glass] }).then(instance => {
+      if (cancelled) instance.destroy();
+      else fullscreenGlassInstance.current = instance;
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      fullscreenGlassInstance.current?.destroy();
+      fullscreenGlassInstance.current = null;
+    };
+  }, [fullscreenPlayer, settings.playerTheme, settings.reduceMotion]);
   useEffect(() => {
     if (!fullscreenPlayer) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setFullscreenPlayer(false); };
@@ -106,7 +144,8 @@ export default function App() {
       </div>
       <div className="volume"><VolumeIcon size={20} aria-hidden="true" /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
     </footer>}
-    {fullscreenPlayer && player.current && <section className="fullscreen-player" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
+    {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className={'fullscreen-player ' + (settings.playerTheme === 'liquid-glass' && !settings.reduceMotion ? 'fullscreen-liquid-enabled' : 'fullscreen-liquid-disabled')} data-player-theme={settings.playerTheme} role="dialog" aria-modal="true" aria-label="Fullscreen music player">
+      {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" style={{ backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%), url("${artwork(player.current)}")` }} aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
       <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><CloseIcon size={24} /><span>Minimize</span></button>
       <div className="fullscreen-layout">
         <aside className="fullscreen-left">
@@ -295,6 +334,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
     setPreference('autoplay', true);
     setPreference('theme', 'dark');
     setPreference('compactPlayer', false);
+    setPreference('playerTheme', 'liquid-glass');
     setPreference('reduceMotion', false);
     setPreference('ambientBackground', true);
     setPreference('showHomeShelves', true);
@@ -308,6 +348,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
   return <section className="settings-page"><small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Straightforward controls. Your preferences stay in this browser.</p>
     <div className="settings-group"><div className="settings-title"><h2>Appearance</h2><p>Make ValoTune feel like yours.</p></div>
       <div className="panel"><div><b>Theme</b><span>Choose dark, light, or follow your device.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])} aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></div>
+      <div className="panel"><div><b>Fullscreen player</b><span>Choose the visual surface used by the large player.</span></div><select className="settings-select" value={settings.playerTheme} onChange={event => setPreference('playerTheme', event.target.value as Settings['playerTheme'])} aria-label="Fullscreen player theme"><option value="liquid-glass">Liquid Glass</option><option value="default">Classic</option></select></div>
       <div className="panel"><div><b>Accent colour</b><span>Used across navigation, highlights, buttons, and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
       {toggle('Ambient background', 'Keep the subtle colour wash behind the page.', 'ambientBackground')}
     </div>

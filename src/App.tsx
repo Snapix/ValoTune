@@ -64,6 +64,9 @@ export default function App() {
     setLiked(items => items.some(item => key(item) === key(song)) ? items.filter(item => key(item) !== key(song)) : [song, ...items]);
   }, [setLiked]);
   useEffect(() => {
+    if (!settings.playerTheme) setSettings(current => ({ ...current, playerTheme: 'liquid-glass' }));
+  }, [settings.playerTheme, setSettings]);
+  useEffect(() => {
     // Migrate the previous purple default to the new neutral grey default.
     if (settings.accent.toLowerCase() === '#8b5cf6') setSettings(current => ({ ...current, accent: '#a3a3a3' }));
     document.documentElement.style.setProperty('--accent', settings.accent);

@@ -452,7 +452,6 @@ function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: numbe
     return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
   }, [record]);
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
-  useEffect(() => { activeLine.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [currentLine]);
   return <section className="lyrics-panel" aria-label="Song lyrics">
     <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
@@ -473,6 +472,7 @@ function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: numbe
         <span className="lyrics-line-text">{line.text}</span>
       </div>;
     })}</div>}
+    {status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span>{lines[currentLine].text}</span></div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

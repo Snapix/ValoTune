@@ -628,3 +628,58 @@ body{background-attachment:scroll}
 }
 [data-reduce-motion="true"] .fullscreen-left .lyrics-line.is-current,
 [data-reduce-motion="true"] .fullscreen-left .lyrics-line.is-current .lyrics-line-text{animation:none}
+
+
+/* Lyrics alignment fix: keep the heading/toggle fixed and make only the lyric list scroll. */
+.fullscreen-left .lyrics-panel{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+}
+.fullscreen-left .lyrics-heading{
+  flex:0 0 auto;
+  width:100%;
+  box-sizing:border-box;
+}
+.fullscreen-left .lyrics-lines{
+  flex:1 1 auto;
+  min-height:0;
+  height:auto;
+  max-height:none;
+  overflow-y:auto;
+  overflow-x:hidden;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  scroll-padding-block:38%;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+.fullscreen-left .lyrics-line{
+  flex:0 0 auto;
+  width:100%;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+}
+.fullscreen-left .lyrics-line-text{
+  min-width:0;
+  display:block;
+  overflow-wrap:anywhere;
+}
+.fullscreen-left .lyrics-timestamp{
+  flex:0 0 auto;
+  margin-right:10px;
+}
+.fullscreen-left .lyrics-credit{
+  flex:0 0 auto;
+  margin:10px 2px 0;
+}
+@media(max-width:620px){
+  .fullscreen-left .lyrics-lines{scroll-padding-block:32%}
+}

@@ -472,7 +472,7 @@ function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: numbe
         <span className="lyrics-line-text">{line.text}</span>
       </div>;
     })}</div>}
-    {status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span>{lines[currentLine].text}</span></div>}
+    {status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span key={currentLine}>{lines[currentLine].text}</span></div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

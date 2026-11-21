@@ -690,3 +690,57 @@ body{background-attachment:scroll}
 .fullscreen-left .lyrics-line.is-seekable{cursor:pointer}
 .fullscreen-left .lyrics-line.is-seekable:hover{background:color-mix(in srgb,var(--accent) 7%,transparent);opacity:.82}
 .fullscreen-left .lyrics-line.is-seekable:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+
+/* Fullscreen Liquid Glass player theme. The glass surface is a single WebGL layer behind the player workspace. */
+.fullscreen-player.fullscreen-liquid-enabled{
+  isolation:isolate;
+  background:#08080b;
+}
+.fullscreen-liquid-backdrop{
+  position:absolute;
+  z-index:0;
+  inset:-8%;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  filter:saturate(1.08) brightness(.48);
+  transform:scale(1.04);
+  opacity:.9;
+}
+.fullscreen-liquid-backdrop::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(ellipse at center,transparent 20%,#08080bcf 78%);
+}
+.fullscreen-liquid-surface{
+  position:absolute;
+  z-index:1;
+  inset:0;
+  overflow:visible;
+  pointer-events:none;
+}
+.fullscreen-liquid-enabled .fullscreen-close,
+.fullscreen-liquid-enabled .fullscreen-layout{position:relative;z-index:3}
+.fullscreen-liquid-enabled .fullscreen-left{
+  background:color-mix(in srgb,var(--panel) 52%,transparent);
+  border-color:#ffffff20;
+  box-shadow:0 30px 90px #0005,inset 0 1px #ffffff18;
+  backdrop-filter:none;
+}
+.fullscreen-liquid-enabled .fullscreen-right .fullscreen-artwork{
+  box-shadow:0 34px 90px #0009,0 0 100px color-mix(in srgb,var(--accent) 16%,transparent);
+}
+.fullscreen-liquid-enabled .fullscreen-track,
+.fullscreen-liquid-enabled .fullscreen-seek,
+.fullscreen-liquid-enabled .fullscreen-controls,
+.fullscreen-liquid-enabled .fullscreen-volume{position:relative}
+.fullscreen-liquid-enabled .fullscreen-panel-nav .gooey-nav__pill{
+  background:#ffffff12;
+  border-color:#ffffff20;
+}
+.fullscreen-liquid-enabled .fullscreen-player{backdrop-filter:none}
+@media(prefers-reduced-motion:reduce){
+  .fullscreen-liquid-enabled .fullscreen-liquid-backdrop{filter:saturate(1) brightness(.5)}
+}

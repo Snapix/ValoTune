@@ -830,3 +830,23 @@ body{background-attachment:scroll}
   .fullscreen-lyric-ambient span{animation:none}
 }
 [data-reduce-motion="true"] .fullscreen-lyric-ambient span{animation:none}
+
+
+/* Ambient lyric layer belongs to the fullscreen scene, not the lyrics panel. Let it show through the glass UI. */
+.fullscreen-player.fullscreen-liquid-enabled .fullscreen-liquid-backdrop{z-index:0}
+.fullscreen-player .fullscreen-liquid-surface{z-index:1}
+.fullscreen-player .fullscreen-lyric-ambient{z-index:2}
+.fullscreen-player .fullscreen-layout{position:relative;z-index:3}
+.fullscreen-player .fullscreen-left{
+  background:color-mix(in srgb,var(--panel) 28%,transparent)!important;
+  backdrop-filter:blur(16px)!important;
+  -webkit-backdrop-filter:blur(16px)!important;
+}
+.fullscreen-player .fullscreen-right{
+  position:relative;
+  z-index:3;
+}
+.fullscreen-player .fullscreen-lyric-ambient span{
+  opacity:.9;
+  mix-blend-mode:normal;
+}

@@ -177,7 +177,8 @@ function FullscreenPanels({ player, settings, setPreference }: { player: ReturnT
     { label: 'Queue', value: 'queue' as const },
   ];
   const showLyrics = panel === 'lyrics' && lyricsAvailable;
-  return <div className={'fullscreen-panel-body ' + (showLyrics ? 'has-lyrics' : 'menu-mode')}>
+  const menuMode = panel === 'lyrics' && !lyricsAvailable;
+  return <div className={'fullscreen-panel-body ' + (showLyrics ? 'has-lyrics' : menuMode ? 'menu-mode' : 'queue-mode')}>
     <div className="fullscreen-panel-nav-wrap">
       <GooeyNav
         items={items.map(item => ({ label: item.label }))}

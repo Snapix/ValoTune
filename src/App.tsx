@@ -48,6 +48,7 @@ export default function App() {
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
   const [fullscreenPlayer, setFullscreenPlayer] = useState(false);
+  const [fullscreenAmbientLyric, setFullscreenAmbientLyric] = useState('');
   const fullscreenGlassRoot = useRef<HTMLElement | null>(null);
   const fullscreenGlassSurface = useRef<HTMLDivElement | null>(null);
   const fullscreenGlassInstance = useRef<Awaited<ReturnType<typeof LiquidGlass.init>> | null>(null);
@@ -107,6 +108,9 @@ export default function App() {
     };
   }, [fullscreenPlayer, settings.playerTheme, settings.reduceMotion]);
   useEffect(() => {
+    if (!fullscreenPlayer) setFullscreenAmbientLyric('');
+  }, [fullscreenPlayer]);
+  useEffect(() => {
     if (!fullscreenPlayer) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setFullscreenPlayer(false); };
     window.addEventListener('keydown', onKeyDown);
@@ -150,12 +154,13 @@ export default function App() {
     {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className={'fullscreen-player ' + (settings.playerTheme === 'liquid-glass' && !settings.reduceMotion ? 'fullscreen-liquid-enabled' : 'fullscreen-liquid-disabled')} data-player-theme={settings.playerTheme} role="dialog" aria-modal="true" aria-label="Fullscreen music player">
       {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" style={{ background: '#08080b' }} aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
       <button className="fullscreen-close fullscreen-ai-minimize" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><span className="ai-orb" aria-hidden="true"><i /><i /><i /></span><span className="ai-minimize-label">EXIT</span></button>
+      {fullscreenAmbientLyric && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span key={fullscreenAmbientLyric}>{fullscreenAmbientLyric}</span></div>}
       <div className="fullscreen-layout">
         <aside className="fullscreen-left">
           <div className="fullscreen-panel-switcher" role="tablist" aria-label="Player panels">
             <button className="fullscreen-panel-tab active" role="tab" aria-selected="true">Queue & Lyrics</button>
           </div>
-          <FullscreenPanels player={player} settings={settings} setPreference={setPreference} />
+          <FullscreenPanels player={player} settings={settings} setPreference={setPreference} onAmbientLyricChange={setFullscreenAmbientLyric} />
         </aside>
         <section className="fullscreen-right">
           <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
@@ -174,7 +179,7 @@ export default function App() {
   </div>;
 }
 
-function FullscreenPanels({ player, settings, setPreference }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void }) {
+function FullscreenPanels({ player, settings, setPreference, onAmbientLyricChange }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; onAmbientLyricChange: (text: string) => void }) {
   const [panel, setPanel] = useState<'queue' | 'lyrics'>('lyrics');
   const items = [
     { label: 'Lyrics', value: 'lyrics' as const },
@@ -199,7 +204,7 @@ function FullscreenPanels({ player, settings, setPreference }: { player: ReturnT
     />
     {panel === 'queue'
       ? <QueuePanel player={player} />
-      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} />}
+      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} onAmbientLyricChange={onAmbientLyricChange} />}
   </div>;
 }
 
@@ -398,7 +403,7 @@ function parseLrc(value: string): LyricLine[] {
   }
   return lines.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
 }
-function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void }) {
+function LyricsPanel({ song, time, provider, onSeek, onAmbientLyricChange }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void; onAmbientLyricChange?: (text: string) => void }) {
   const [record, setRecord] = useState<LyricsRecord | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
@@ -452,6 +457,11 @@ function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: numbe
     return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
   }, [record]);
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
+  useEffect(() => {
+    if (!onAmbientLyricChange) return;
+    const text = status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null ? lines[currentLine].text : '';
+    onAmbientLyricChange(text);
+  }, [status, currentLine, lines, onAmbientLyricChange]);
   return <section className="lyrics-panel" aria-label="Song lyrics">
     <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
@@ -472,7 +482,6 @@ function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: numbe
         <span className="lyrics-line-text">{line.text}</span>
       </div>;
     })}</div>}
-    {status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span key={currentLine}>{lines[currentLine].text}</span></div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

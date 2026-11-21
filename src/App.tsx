@@ -157,7 +157,7 @@ function FullscreenPanels({ player, settings, setPreference }: { player: ReturnT
     />
     {panel === 'queue'
       ? <QueuePanel player={player} />
-      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} />}
+      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} />}
   </div>;
 }
 
@@ -354,7 +354,7 @@ function parseLrc(value: string): LyricLine[] {
   }
   return lines.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
 }
-function LyricsPanel({ song, time, provider }: { song: Song; time: number; provider: Settings['lyricsProvider'] }) {
+function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void }) {
   const [record, setRecord] = useState<LyricsRecord | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
@@ -408,20 +408,27 @@ function LyricsPanel({ song, time, provider }: { song: Song; time: number; provi
     return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
   }, [record]);
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
-  const formatLyricTimestamp = (seconds: number) => {
-    const total = Math.max(0, Math.floor(seconds));
-    const hours = Math.floor(total / 3600);
-    const minutes = Math.floor((total % 3600) / 60);
-    const remainder = total % 60;
-    return [hours, minutes, remainder].map(value => String(value).padStart(2, '0')).join(':');
-  };
   useEffect(() => { activeLine.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [currentLine]);
   return <section className="lyrics-panel" aria-label="Song lyrics">
     <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
     {status === 'error' && <div className="lyrics-state"><p>Lyrics couldn’t be loaded right now.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
     {status === 'empty' && <div className="lyrics-state">{record?.instrumental ? 'This track is marked as instrumental.' : 'No lyrics found for this track.'}</div>}
-    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '')}>{line.time !== null && <span className="lyrics-timestamp" aria-label={'Timestamp ' + formatLyricTimestamp(line.time)}>{formatLyricTimestamp(line.time)}</span>}<span className="lyrics-line-text">{line.text}</span></div>)}</div>}
+    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => {
+      const seekable = line.time !== null;
+      return <div
+        key={index}
+        ref={index === currentLine ? activeLine : null}
+        className={'lyrics-line' + (index === currentLine ? ' is-current' : '') + (seekable ? ' is-seekable' : '')}
+        onClick={() => { if (line.time !== null) onSeek?.(line.time); }}
+        onKeyDown={event => { if (seekable && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onSeek?.(line.time!); } }}
+        role={seekable ? 'button' : undefined}
+        tabIndex={seekable ? 0 : undefined}
+        aria-label={seekable ? 'Seek to ' + line.text : undefined}
+      >
+        <span className="lyrics-line-text">{line.text}</span>
+      </div>;
+    })}</div>}
     <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
   </section>;
 }

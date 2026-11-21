@@ -164,7 +164,22 @@ export default function App() {
         </aside>
         <section className="fullscreen-right">
           <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
-          <div className="fullscreen-track"><small>NOW PLAYING</small><h1>{player.current.name || 'Unknown track'}</h1><p>{player.current.artist || 'Unknown artist'}</p></div>
+          <div className="fullscreen-track">
+            <small>NOW PLAYING</small>
+            <h1>{player.current.name || 'Unknown track'}</h1>
+            <p>{player.current.artist || 'Unknown artist'}</p>
+            <div className="fullscreen-track-actions" aria-label="Track actions">
+              <button className={likedIds.has(player.current.videoId) ? 'fullscreen-track-action is-liked' : 'fullscreen-track-action'} onClick={() => toggleLike(player.current!)} aria-label={likedIds.has(player.current.videoId) ? 'Unlike song' : 'Like song'} aria-pressed={likedIds.has(player.current.videoId)}>
+                <span aria-hidden="true">♡</span>
+              </button>
+              <button className="fullscreen-track-action" onClick={() => notify('Add to playlist coming soon.')} aria-label="Add to playlist">
+                <span aria-hidden="true">＋</span>
+              </button>
+              <button className="fullscreen-track-action" onClick={async () => { try { await navigator.clipboard?.writeText(window.location.href); notify('Link copied.'); } catch { notify('Share link unavailable.'); } }} aria-label="Share song">
+                <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </div>
           <div className="fullscreen-seek"><div className="fullscreen-time"><span>{fmt(player.time)}</span><span>{fmt(player.duration)}</span></div><ElasticSlider value={player.time} maxValue={Math.max(1, player.duration)} onChange={player.seek} ariaLabel="Seek through track" /></div>
           <div className="fullscreen-controls">
             <button className="fullscreen-icon" onClick={player.prev} aria-label="Previous track"><PreviousIcon size={32} /></button>

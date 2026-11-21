@@ -148,7 +148,7 @@ export default function App() {
       <div className="volume"><VolumeIcon size={20} aria-hidden="true" /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
     </footer>}
     {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className={'fullscreen-player ' + (settings.playerTheme === 'liquid-glass' && !settings.reduceMotion ? 'fullscreen-liquid-enabled' : 'fullscreen-liquid-disabled')} data-player-theme={settings.playerTheme} role="dialog" aria-modal="true" aria-label="Fullscreen music player">
-      {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" style={{ backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%), url("${artwork(player.current)}")` }} aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
+      {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" style={{ background: '#08080b' }} aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
       <button className="fullscreen-close fullscreen-ai-minimize" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><span className="ai-orb" aria-hidden="true"><i /><i /><i /></span><span className="ai-minimize-label">EXIT</span></button>
       <div className="fullscreen-layout">
         <aside className="fullscreen-left">

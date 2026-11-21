@@ -760,3 +760,73 @@ body{background-attachment:scroll}
 @media(max-width:620px){.fullscreen-ai-minimize{top:14px;right:14px}.ai-minimize-label{display:none}}
 @media(prefers-reduced-motion:reduce){.ai-orb::before,.ai-orb::after{animation:none}.fullscreen-ai-minimize{transition:none}}
 [data-reduce-motion="true"] .ai-orb::before,[data-reduce-motion="true"] .ai-orb::after{animation:none}
+
+
+/* Fullscreen lyric ambient mode: no poster backdrop, no page scrolling, only the synced line floats behind the glass UI. */
+.fullscreen-player{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+  touch-action:pan-y;
+}
+.fullscreen-layout{
+  overflow:hidden!important;
+  overscroll-behavior:none;
+}
+.fullscreen-liquid-backdrop{
+  background:#08080b!important;
+  background-image:none!important;
+  filter:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+.fullscreen-liquid-backdrop::after{
+  background:#08080b!important;
+}
+.fullscreen-lyric-ambient{
+  position:fixed;
+  z-index:2;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8vh 8vw;
+  pointer-events:none;
+  overflow:hidden;
+  text-align:center;
+}
+.fullscreen-lyric-ambient span{
+  display:block;
+  max-width:min(1050px,84vw);
+  color:#fff;
+  font-size:clamp(34px,6.5vw,92px);
+  font-weight:760;
+  line-height:1.06;
+  letter-spacing:-.055em;
+  text-wrap:balance;
+  text-shadow:0 8px 42px #000,0 0 80px #000;
+  animation:vt-ambient-lyric-in .7s cubic-bezier(.18,.86,.24,1) both;
+}
+@keyframes vt-ambient-lyric-in{
+  0%{opacity:0;filter:blur(18px);transform:translateY(24px) scale(.94)}
+  48%{opacity:1;filter:blur(0);transform:translateY(-3px) scale(1.015)}
+  100%{opacity:1;filter:blur(0);transform:none}
+}
+.fullscreen-left .lyrics-lines{
+  overflow:hidden!important;
+  scrollbar-width:none!important;
+  scroll-behavior:auto!important;
+}
+.fullscreen-left .lyrics-lines::-webkit-scrollbar{display:none}
+@media(max-width:900px){
+  .fullscreen-layout{overflow:hidden!important}
+  .fullscreen-lyric-ambient{padding:8vh 7vw}
+  .fullscreen-lyric-ambient span{max-width:86vw;font-size:clamp(30px,8vw,68px)}
+}
+@media(max-width:620px){
+  .fullscreen-lyric-ambient{padding:12vh 6vw}
+  .fullscreen-lyric-ambient span{font-size:clamp(28px,8.5vw,48px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .fullscreen-lyric-ambient span{animation:none}
+}
+[data-reduce-motion="true"] .fullscreen-lyric-ambient span{animation:none}

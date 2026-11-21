@@ -683,3 +683,10 @@ body{background-attachment:scroll}
 @media(max-width:620px){
   .fullscreen-left .lyrics-lines{scroll-padding-block:32%}
 }
+
+
+/* Lyrics interaction: timestamps are hidden; synced lines act as seek controls. */
+.lyrics-timestamp{display:none!important}
+.fullscreen-left .lyrics-line.is-seekable{cursor:pointer}
+.fullscreen-left .lyrics-line.is-seekable:hover{background:color-mix(in srgb,var(--accent) 7%,transparent);opacity:.82}
+.fullscreen-left .lyrics-line.is-seekable:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}

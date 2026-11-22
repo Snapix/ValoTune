@@ -68,6 +68,17 @@ export default function App() {
     if (!settings.playerTheme) setSettings(current => ({ ...current, playerTheme: 'liquid-glass' }));
   }, [settings.playerTheme, setSettings]);
   useEffect(() => {
+    if (settings.glassBlur == null || settings.glassOpacity == null || settings.glassRefraction == null) {
+      setSettings(current => ({
+        ...current,
+        glassBlur: current.glassBlur ?? 22,
+        glassOpacity: current.glassOpacity ?? 94,
+        glassRefraction: current.glassRefraction ?? 72
+      }));
+    }
+  }, [settings.glassBlur, settings.glassOpacity, settings.glassRefraction, setSettings]);
+
+  useEffect(() => {
     // Migrate the previous purple default to the new neutral grey default.
     if (settings.accent.toLowerCase() === '#8b5cf6') setSettings(current => ({ ...current, accent: '#a3a3a3' }));
     document.documentElement.style.setProperty('--accent', settings.accent);

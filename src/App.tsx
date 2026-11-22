@@ -471,7 +471,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
     setPreference('lyricsProvider', 'lrclib');
   };
   const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'ambientBackground' | 'showHomeShelves' | 'showGenres' | 'showNavLabels' | 'autoplay') => (
-    <div className={\`panel \${settings[field] ? 'on' : ''}\`} key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={\`toggle \${settings[field] ? 'on' : ''}\`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
+    <div className={`panel ${settings[field] ? 'on' : ''}`} key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
   );
   const categories = [
     ['theme', 'Theming', 'Colors and overall appearance'],
@@ -490,7 +490,7 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
       {category === 'theme' && <div className="settings-group">
         <div className="settings-title"><h2>Theming</h2><p>Control ValoTune's colors and page surface.</p></div>
         <div className="panel"><div><b>Theme</b><span>Choose dark, light, or follow your device.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])}><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></div>
-        <div className="panel"><div><b>Accent colour</b><span>Used across navigation, highlights, buttons, and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={\`Accent \${color}\`} aria-pressed={settings.accent === color} />)}</div></div>
+        <div className="panel"><div><b>Accent colour</b><span>Used across navigation, highlights, buttons, and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
         {toggle('Ambient background', 'Keep the subtle colour wash behind the page.', 'ambientBackground')}
         {toggle('Reduce animations', 'Minimise transitions and moving effects.', 'reduceMotion')}
       </div>}

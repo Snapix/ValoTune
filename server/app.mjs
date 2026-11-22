@@ -103,7 +103,13 @@ app.get('/api/audiodb/discography/:id', async (req, res) => {
   const id = decodeURIComponent(String(req.params.id || '')).trim().slice(0, 32);
   if (!/^\\d+$/.test(id)) return res.status(400).json({ error: 'A numeric AudioDB artist ID is required.' });
   try {
-    const data = await cached('audiodb:discography:' + id, 60 * 60_000, () => audioDbRequest('list/discography/' + id, 'discography.php?s=' + id));
+    const data = await cached('audiodb:discography:' + id, 60 * 60_000, async () => {
+      if (AUDIODB_V2_KEY) return audioDbRequest('list/discography/' + id, 'discography.php?s=' + id);
+      const artistData = await audioDbRequest('lookup/artist/' + id, 'artist.php?i=' + id);
+      const artist = Array.isArray(artistData?.artists) ? artistData.artists[0] : null;
+      if (!artist?.strArtist) return { albums: [] };
+      return audioDbRequest('list/discography/' + id, 'discography.php?s=' + encodeURIComponent(artist.strArtist));
+    });
     res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
     return res.json(data);
   } catch (error) {

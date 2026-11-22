@@ -71,7 +71,7 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
   }, []);
 
   const play = useCallback((song: Song, list?: Song[]) => {
-    const valid = (list?.length ? list : [song]).filter(item => item?.videoId);
+    const valid = [...new Map((list?.length ? list : [song]).filter(item => item?.videoId).map(item => [item.videoId, item])).values()];
     if (!valid.length) return;
     queueRef.current = valid;
     setQueue(valid);
@@ -168,6 +168,23 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
     player.current.seekTo(target, true);
     setTime(target);
   }, [duration]);
+  const addToQueue = useCallback((song: Song) => {
+    if (!song?.videoId) return;
+    const list = queueRef.current;
+    if (list.some(item => item.videoId === song.videoId)) return;
+    const next = [...list, song];
+    queueRef.current = next;
+    setQueue(next);
+  }, []);
+  const removeFromQueue = useCallback((videoId: string) => {
+    if (!videoId || queueRef.current.length <= 1) return;
+    const removedIndex = queueRef.current.findIndex(item => item.videoId === videoId);
+    if (removedIndex < 0 || videoId === current?.videoId) return;
+    const next = queueRef.current.filter(item => item.videoId !== videoId);
+    queueRef.current = next;
+    if (removedIndex < indexRef.current) indexRef.current -= 1;
+    setQueue(next);
+  }, [current?.videoId]);
   const setVolume = useCallback((next: number) => {
     const safe = Math.max(0, Math.min(100, Number(next) || 0));
     volumeRef.current = safe;
@@ -175,5 +192,5 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
     if (ready.current) player.current?.setVolume(safe);
   }, []);
 
-  return { host, current, queue, playing, time, duration, volume, play, toggle, seek, setVolume, next: () => step(1), prev: () => step(-1) };
+  return { host, current, queue, playing, time, duration, volume, play, addToQueue, removeFromQueue, toggle, seek, setVolume, next: () => step(1), prev: () => step(-1) };
 }

@@ -284,7 +284,7 @@ function Discover(v: ViewProps & { notify: (message: string) => void; initialQue
   const [result, setResult] = useState<SearchData | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<'songs' | 'artists'>('songs');
+  const [filter, setFilter] = useState<'songs' | 'artists' | 'audiodb'>('songs');
   const [recentTerms, setRecentTerms] = useState<string[]>([]);
   const timer = useRef<number | undefined>(undefined);
   const searchController = useRef<AbortController | null>(null);
@@ -332,12 +332,102 @@ function Discover(v: ViewProps & { notify: (message: string) => void; initialQue
     {recentTerms.length > 0 && <div className="recent-terms"><span>Recent searches</span>{recentTerms.map(term => <button key={term} onClick={() => void run(term)}>{term}</button>)}</div>}
     {error && <div className="notice" role="alert">{error}<button onClick={() => void run(query)}>Retry</button></div>}
     <div className="section-title results-heading"><div><small className="eyebrow">YOUR RESULTS</small><h2>{result ? `Results for “${query}”` : 'Start exploring'}</h2></div>{result && <span>{songs.length} songs · {result.artists.length} artists</span>}</div>
-    <div className="filter-tabs"><button className={filter === 'songs' ? 'active' : ''} onClick={() => setFilter('songs')}>Songs</button><button className={filter === 'artists' ? 'active' : ''} onClick={() => setFilter('artists')}>Artists</button></div>
+    <div className="filter-tabs"><button className={filter === 'songs' ? 'active' : ''} onClick={() => setFilter('songs')}>Songs</button><button className={filter === 'artists' ? 'active' : ''} onClick={() => setFilter('artists')}>Artists</button><button className={filter === 'audiodb' ? 'active' : ''} onClick={() => setFilter('audiodb')}>AudioDB</button></div>
     {busy && <div className="skeleton-row">{Array.from({ length: 5 }, (_, i) => <div className="sk" key={i} />)}</div>}
     {!busy && filter === 'songs' && songs.length > 0 && <div className="result-list">{songs.map(song => <div className="result-row" key={song.videoId}><button className="result-play" onClick={() => v.play(song, songs)} aria-label={`Play ${song.name}`}><img src={song.thumb} alt="" loading="lazy" /><span>{v.currentId === song.videoId && v.playing ? 'Ⅱ' : '▶'}</span></button><button className="result-info" onClick={() => v.play(song, songs)}><b>{song.name}</b><span>{song.artist}</span></button><span className="result-duration">{fmt(song.duration)}</span><button className="icon-btn" onClick={() => v.queueSong(song)} aria-label={"Add " + song.name + " to queue"}>＋</button><button className={v.liked.has(song.videoId) ? 'icon-btn liked' : 'icon-btn'} onClick={() => v.toggleLike(song)} aria-label="Like song">{v.liked.has(song.videoId) ? '♥' : '♡'}</button></div>)}</div>}
     {!busy && filter === 'artists' && (result?.artists.length ?? 0) > 0 && <div className="artist-grid">{result!.artists.map(artist => <button key={artist.name} onClick={() => void run(artist.name)}><img src={artist.thumb} alt="" loading="lazy" /><b>{artist.name}</b><span>Search artist tracks ↗</span></button>)}</div>}
     {!busy && result && (filter === 'songs' ? songs.length === 0 : result.artists.length === 0) && <div className="empty"><span>♫</span><b>No {filter} found</b><p>Try a different title, artist, or spelling.</p></div>}
-    {!result && !busy && !error && <div className="discover-empty"><span>♫</span><b>What are you in the mood for?</b><p>Search above or pick a popular genre.</p><div>{GENRES.slice(0, 6).map(genre => <button key={genre} onClick={() => void run(genre + ' songs')}>{genre}</button>)}</div></div>}
+    {filter === 'audiodb' && <AudioDBPanel initialQuery={query} onFindOnValo={term => { setFilter('songs'); void run(term); }} />}
+    {!result && !busy && !error && filter !== 'audiodb' && <div className="discover-empty"><span>♫</span><b>What are you in the mood for?</b><p>Search above or pick a popular genre.</p><div>{GENRES.slice(0, 6).map(genre => <button key={genre} onClick={() => void run(genre + ' songs')}>{genre}</button>)}</div></div>}
+  </section>;
+}
+
+
+type AudioDbType = 'artist' | 'album' | 'track';
+type AudioDbRecord = Record<string, any>;
+
+function audioDbRecords(data: any, type: AudioDbType): AudioDbRecord[] {
+  const keys = type === 'artist' ? ['artists', 'artist'] : type === 'album' ? ['albums', 'album'] : ['tracks', 'track'];
+  for (const key of keys) if (Array.isArray(data?.[key])) return data[key];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+}
+
+function audioDbImage(item: AudioDbRecord) {
+  return item.strArtistThumb || item.strArtistFanart || item.strAlbumThumb || item.strAlbumThumbHQ || item.strTrackThumb || item.strArtistLogo || '';
+}
+
+function audioDbTitle(item: AudioDbRecord, type: AudioDbType) {
+  return type === 'artist' ? item.strArtist || item.name || 'Unknown artist' : type === 'album' ? item.strAlbum || item.name || 'Unknown album' : item.strTrack || item.name || 'Unknown track';
+}
+
+function AudioDBPanel({ initialQuery, onFindOnValo }: { initialQuery: string; onFindOnValo: (term: string) => void }) {
+  const [type, setType] = useState<AudioDbType>('artist');
+  const [query, setQuery] = useState(initialQuery || '');
+  const [records, setRecords] = useState<AudioDbRecord[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [detail, setDetail] = useState<AudioDbRecord | null>(null);
+  const [discography, setDiscography] = useState<AudioDbRecord[]>([]);
+  const [discBusy, setDiscBusy] = useState(false);
+
+  const search = useCallback(async () => {
+    const value = query.trim();
+    if (!value) return;
+    setBusy(true); setError(''); setDetail(null);
+    try {
+      const data = await api<any>('/api/audiodb/search/' + type + '/' + encodeURIComponent(value));
+      setRecords(audioDbRecords(data, type).slice(0, 10));
+    } catch (e) {
+      setRecords([]);
+      setError(e instanceof Error ? e.message : 'AudioDB search failed.');
+    } finally { setBusy(false); }
+  }, [query, type]);
+
+  const lookup = async (item: AudioDbRecord) => {
+    const id = item.idArtist || item.idAlbum || item.idTrack;
+    if (!id) return;
+    setDetail(item);
+    try {
+      const data = await api<any>('/api/audiodb/lookup/' + type + '/' + encodeURIComponent(String(id)));
+      const records = audioDbRecords(data, type);
+      setDetail(records[0] || item);
+      if (type === 'artist') {
+        setDiscBusy(true);
+        try {
+          const disc = await api<any>('/api/audiodb/discography/' + encodeURIComponent(String(id)));
+          setDiscography(audioDbRecords(disc, 'album').slice(0, 20));
+        } catch { setDiscography([]); }
+        finally { setDiscBusy(false); }
+      }
+    } catch { /* keep search result visible */ }
+  };
+
+  return <section className="audiodb-panel">
+    <div className="audiodb-header"><div><small className="eyebrow">THEAUDIODB METADATA</small><h2>Artwork & music details</h2><p>Posters, artist info, album details and discographies from TheAudioDB.</p></div></div>
+    <form className="audiodb-search" onSubmit={event => { event.preventDefault(); void search(); }}>
+      <select value={type} onChange={event => { setType(event.target.value as AudioDbType); setRecords([]); setDetail(null); }} aria-label="AudioDB search type"><option value="artist">Artist</option><option value="album">Album</option><option value="track">Track</option></select>
+      <input value={query} onChange={event => setQuery(event.target.value)} placeholder={type === 'artist' ? 'Coldplay' : type === 'album' ? 'Parachutes' : 'Yellow'} aria-label="AudioDB search" />
+      <button type="submit" disabled={busy}>{busy ? 'Searching…' : 'Search'}</button>
+    </form>
+    {error && <div className="notice" role="alert">{error}</div>}
+    {busy && <div className="audiodb-grid">{Array.from({ length: 6 }, (_, i) => <div className="audiodb-skeleton" key={i} />)}</div>}
+    {!busy && records.length > 0 && <div className="audiodb-grid">{records.map((item, index) => {
+      const title = audioDbTitle(item, type);
+      const image = audioDbImage(item);
+      return <article className="audiodb-card" key={String(item.idArtist || item.idAlbum || item.idTrack || index)}>
+        <div className="audiodb-art">{image ? <img src={image} alt="" loading="lazy" /> : <span>♫</span>}</div>
+        <div className="audiodb-card-copy"><b>{title}</b><span>{type === 'track' ? item.strArtist || 'Track' : type === 'album' ? item.strArtist || item.intYearReleased || 'Album' : item.strGenre || item.strCountry || 'Artist'}</span></div>
+        <div className="audiodb-actions"><button type="button" onClick={() => void lookup(item)}>Details</button>{type !== 'album' && <button type="button" onClick={() => onFindOnValo(type === 'artist' ? title : item.strArtist || title)}>Play on ValoTune</button>}</div>
+      </article>;
+    })}</div>}
+    {!busy && !records.length && !error && <div className="empty"><span>♫</span><b>Search TheAudioDB</b><p>Use the artist, album or track endpoint to bring metadata into ValoTune.</p></div>}
+    {detail && <aside className="audiodb-detail">
+      <div className="audiodb-detail-art">{audioDbImage(detail) ? <img src={audioDbImage(detail)} alt="" /> : <span>♫</span>}</div>
+      <div><small className="eyebrow">{type.toUpperCase()} DETAILS</small><h3>{audioDbTitle(detail, type)}</h3><p>{detail.strDescriptionEN || detail.strGenre || detail.strStyle || detail.strAlbum || detail.strArtist || 'Metadata available from TheAudioDB.'}</p>{detail.strArtist && <span className="audiodb-meta">{detail.strArtist}{detail.intYearReleased ? ' · ' + detail.intYearReleased : ''}</span>}</div>
+      {type === 'artist' && <div className="audiodb-discography"><b>Discography</b>{discBusy ? <span>Loading albums…</span> : discography.length ? <div>{discography.map((album, index) => <button key={String(album.idAlbum || index)} onClick={() => { setType('album'); setQuery(album.strAlbum || ''); }}>{album.strAlbum || 'Album'}</button>)}</div> : <span>No discography available.</span>}</div>}
+    </aside>}
   </section>;
 }
 

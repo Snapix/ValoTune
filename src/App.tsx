@@ -278,10 +278,10 @@ function Home(v: ViewProps & { recent: Song[]; onExplore: (term: string) => void
   </section>;
 }
 
-function Shelf({ section, play, liked, toggleLike, currentId, playing }: { section: Section } & ViewProps) {
-  return <section className="shelf"><div className="section-title"><div><small className="eyebrow">CURATED FOR YOU</small><h2>{section.title}</h2></div><span>{section.songs.length} tracks</span></div><div className="scroller">{section.songs.map(song => <Card key={song.videoId} song={song} list={section.songs} play={play} liked={liked} toggleLike={toggleLike} currentId={currentId} playing={playing} />)}</div></section>;
+function Shelf({ section, play, queueSong, liked, toggleLike, currentId, playing }: { section: Section } & ViewProps) {
+  return <section className="shelf"><div className="section-title"><div><small className="eyebrow">CURATED FOR YOU</small><h2>{section.title}</h2></div><span>{section.songs.length} tracks</span></div><div className="scroller">{section.songs.map(song => <Card key={song.videoId} song={song} list={section.songs} play={play} queueSong={queueSong} liked={liked} toggleLike={toggleLike} currentId={currentId} playing={playing} />)}</div></section>;
 }
-function Card({ song, list, play, liked, toggleLike, currentId, playing }: { song: Song; list: Song[] } & ViewProps) {
+function Card({ song, list, play, queueSong, liked, toggleLike, currentId, playing }: { song: Song; list: Song[] } & ViewProps) {
   const isCurrent = currentId === song.videoId;
   return <article className={`card ${isCurrent ? 'is-current' : ''}`}>
     <div className="cover-wrap"><button className="cover-button" onClick={() => play(song, list)} aria-label={`Play ${song.name}`}><img src={song.thumb} alt="" loading="lazy" onError={e => { e.currentTarget.style.opacity = '0'; }} /><span>{isCurrent && playing ? 'Ⅱ' : '▶'}</span></button><button className={liked.has(song.videoId) ? 'cover-like liked' : 'cover-like'} onClick={() => toggleLike(song)} aria-label={liked.has(song.videoId) ? 'Unlike song' : 'Like song'}>{liked.has(song.videoId) ? '♥' : '♡'}</button><button className="cover-queue" onClick={() => queueSong(song)} aria-label={"Add " + song.name + " to queue"}>＋</button></div>
@@ -442,7 +442,7 @@ function AudioDBPanel({ initialQuery, onFindOnValo }: { initialQuery: string; on
   </section>;
 }
 
-function Library({ play, liked, toggleLike, currentId, playing, likedList, recent }: ViewProps & { likedList: Song[]; recent: Song[] }) {
+function Library({ play, queueSong, liked, toggleLike, currentId, playing, likedList, recent }: ViewProps & { likedList: Song[]; recent: Song[] }) {
   const [mode, setMode] = useState<'liked' | 'recent'>('liked');
   const songs = mode === 'liked' ? likedList : recent;
   return <section className="library-page"><small className="eyebrow">YOUR PERSONAL COLLECTION</small><h1 className="page-heading">Your <em>library.</em></h1><p className="sub">Saved on this device, ready whenever you are.</p><div className="filter-tabs library-tabs"><button className={mode === 'liked' ? 'active' : ''} onClick={() => setMode('liked')}>Liked songs <span>{likedList.length}</span></button><button className={mode === 'recent' ? 'active' : ''} onClick={() => setMode('recent')}>Recently played <span>{recent.length}</span></button></div>

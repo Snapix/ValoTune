@@ -1047,7 +1047,7 @@ body{background-attachment:scroll}
   border:1px solid color-mix(in srgb,#fff 12%,transparent);
   border-radius:50%;
   background:color-mix(in srgb,#fff 6%,transparent);
-  color:var(--text);
+  color:var(--ink);
   cursor:pointer;
   transition:background .18s ease,transform .18s ease,color .18s ease;
 }

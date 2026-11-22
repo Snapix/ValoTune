@@ -13,7 +13,7 @@ const ACCENTS = ['#a3a3a3', '#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
 const TABS = ['Home', 'Library', 'Discover', 'Settings', 'App'];
 type SearchData = { songs: Song[]; artists: Artist[] };
-type ViewProps = { play: (song: Song, list?: Song[]) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
+type ViewProps = { play: (song: Song, list?: Song[]) => void; queueSong: (song: Song) => void; liked: Set<string>; toggleLike: (song: Song) => void; currentId?: string; playing: boolean };
 const api = async <T,>(url: string, signal?: AbortSignal): Promise<T> => {
   const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
   const response = await fetch(`${apiBase}${url}`, { signal });
@@ -43,7 +43,7 @@ export default function App() {
     update();
     return () => { media.removeEventListener?.('change', update); window.removeEventListener('appinstalled', update); };
   }, []);
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, playerTheme: 'liquid-glass', reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, playerTheme: 'liquid-glass', glassBlur: 22, glassOpacity: 94, glassRefraction: 72, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
@@ -80,14 +80,14 @@ export default function App() {
     if (!root || !glass) return;
     let cancelled = false;
     glass.dataset.config = JSON.stringify({
-      blurAmount: 0.22,
-      refraction: 0.72,
+      blurAmount: Math.max(0.05, Math.min(0.5, settings.glassBlur / 100)),
+      refraction: Math.max(0, Math.min(1, settings.glassRefraction / 100)),
       chromAberration: 0.035,
       edgeHighlight: 0.08,
       fresnel: 0.8,
       cornerRadius: 0,
       zRadius: 24,
-      opacity: 0.94,
+      opacity: Math.max(0.7, Math.min(1, settings.glassOpacity / 100)),
       saturation: 0.06,
       brightness: 0.02,
       shadowOpacity: 0.12,
@@ -106,7 +106,7 @@ export default function App() {
       fullscreenGlassInstance.current?.destroy();
       fullscreenGlassInstance.current = null;
     };
-  }, [fullscreenPlayer, settings.playerTheme, settings.reduceMotion]);
+  }, [fullscreenPlayer, settings.playerTheme, settings.glassBlur, settings.glassOpacity, settings.glassRefraction, settings.reduceMotion]);
   useEffect(() => {
     if (!fullscreenPlayer) setFullscreenAmbientLyric('');
   }, [fullscreenPlayer]);
@@ -116,7 +116,7 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [fullscreenPlayer]);
-  const view: ViewProps = { play: player.play, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
+  const view: ViewProps = { play: player.play, queueSong: player.addToQueue, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>

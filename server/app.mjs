@@ -48,6 +48,72 @@ function normalizeSong(song) {
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'valotune-api' }));
 
+const AUDIODB_V1_KEY = process.env.AUDIODB_V1_KEY || '2';
+const AUDIODB_V2_KEY = process.env.AUDIODB_API_KEY || '';
+const AUDIODB_ORIGIN = 'https://www.theaudiodb.com';
+
+async function audioDbRequest(v2Path, v1Path) {
+  const url = AUDIODB_V2_KEY
+    ? AUDIODB_ORIGIN + '/api/v2/json/' + v2Path
+    : AUDIODB_ORIGIN + '/api/v1/json/' + AUDIODB_V1_KEY + '/' + v1Path;
+  const response = await fetch(url, AUDIODB_V2_KEY ? { headers: { 'X-API-KEY': AUDIODB_V2_KEY } } : undefined);
+  if (!response.ok) throw new Error('TheAudioDB request failed (' + response.status + ')');
+  return response.json();
+}
+
+app.get('/api/audiodb/search/:type/:query', async (req, res) => {
+  const type = String(req.params.type || '').toLowerCase();
+  const query = decodeURIComponent(String(req.params.query || '')).trim().slice(0, 100);
+  const paths = {
+    artist: ['search/artist/' + encodeURIComponent(query), 'search.php?s=' + encodeURIComponent(query)],
+    album: ['search/album/' + encodeURIComponent(query), 'searchalbum.php?s=' + encodeURIComponent(query)],
+    track: ['search/track/' + encodeURIComponent(query), 'searchtrack.php?s=' + encodeURIComponent(query)]
+  };
+  if (!paths[type] || !query) return res.status(400).json({ error: 'Supported AudioDB searches are artist, album, and track.' });
+  try {
+    const data = await cached('audiodb:search:' + type + ':' + query.toLowerCase(), 30 * 60_000, () => audioDbRequest(paths[type][0], paths[type][1]));
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+    return res.json(data);
+  } catch (error) {
+    console.error('AudioDB search failed:', error?.message || error);
+    return res.status(502).json({ error: 'AudioDB metadata is temporarily unavailable.' });
+  }
+});
+
+app.get('/api/audiodb/lookup/:type/:id', async (req, res) => {
+  const type = String(req.params.type || '').toLowerCase();
+  const id = decodeURIComponent(String(req.params.id || '')).trim().slice(0, 100);
+  const paths = {
+    artist: ['lookup/artist/' + encodeURIComponent(id), 'artist.php?i=' + encodeURIComponent(id)],
+    album: ['lookup/album/' + encodeURIComponent(id), 'album.php?m=' + encodeURIComponent(id)],
+    track: ['lookup/track/' + encodeURIComponent(id), 'track.php?h=' + encodeURIComponent(id)]
+  };
+  if (!paths[type] || !id) return res.status(400).json({ error: 'Supported AudioDB lookups are artist, album, and track.' });
+  try {
+    const data = await cached('audiodb:lookup:' + type + ':' + id, 60 * 60_000, () => audioDbRequest(paths[type][0], paths[type][1]));
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
+    return res.json(data);
+  } catch (error) {
+    console.error('AudioDB lookup failed:', error?.message || error);
+    return res.status(502).json({ error: 'AudioDB metadata is temporarily unavailable.' });
+  }
+});
+
+app.get('/api/audiodb/discography/:id', async (req, res) => {
+  const id = decodeURIComponent(String(req.params.id || '')).trim().slice(0, 32);
+  if (!/^\\d+$/.test(id)) return res.status(400).json({ error: 'A numeric AudioDB artist ID is required.' });
+  try {
+    const data = await cached('audiodb:discography:' + id, 60 * 60_000, () => audioDbRequest('list/discography/' + id, 'discography.php?s=' + id));
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
+    return res.json(data);
+  } catch (error) {
+    console.error('AudioDB discography failed:', error?.message || error);
+    return res.status(502).json({ error: 'AudioDB discography is temporarily unavailable.' });
+  }
+});
+
+
+
 app.get('/api/lyrics', async (req, res) => {
   const videoId = String(req.query.videoId || '').trim().slice(0, 32);
   if (!videoId) return res.status(400).json({ error: 'A YouTube video ID is required.' });

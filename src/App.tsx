@@ -56,7 +56,6 @@ export default function App() {
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
   const [fullscreenPlayer, setFullscreenPlayer] = useState(false);
-  const [fullscreenAmbientLyric, setFullscreenAmbientLyric] = useState('');
   const toastTimer = useRef<number | undefined>(undefined);
   const onPlayed = useCallback((song: Song) => setRecent(items => [song, ...items.filter(item => item.videoId !== song.videoId)].slice(0, 50)), [setRecent]);
   const player = usePlayer(settings.volume, settings.autoplay, onPlayed, settings.crossfade, settings.normalization, settings.streamingQuality);
@@ -69,9 +68,6 @@ export default function App() {
   const toggleLike = useCallback((song: Song) => {
     setLiked(items => items.some(item => key(item) === key(song)) ? items.filter(item => key(item) !== key(song)) : [song, ...items]);
   }, [setLiked]);
-  useEffect(() => {
-    if (!fullscreenPlayer) setFullscreenAmbientLyric('');
-  }, [fullscreenPlayer]);
   useEffect(() => {
     if (!fullscreenPlayer) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setFullscreenPlayer(false); };
@@ -157,13 +153,12 @@ export default function App() {
     {fullscreenPlayer && player.current && <section className="fullscreen-player" data-player-theme="blur" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
       <div className="fullscreen-blur-backdrop" aria-hidden="true" />
       <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Close player">Close</button>
-      {fullscreenAmbientLyric && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span key={fullscreenAmbientLyric}>{fullscreenAmbientLyric}</span></div>}
       <div className="fullscreen-layout">
         <aside className="fullscreen-left">
           <div className="fullscreen-panel-switcher" role="tablist" aria-label="Player panels">
             <button className="fullscreen-panel-tab active" role="tab" aria-selected="true">Queue & Lyrics</button>
           </div>
-          <FullscreenPanels player={player} settings={settings} setPreference={setPreference} onAmbientLyricChange={setFullscreenAmbientLyric} />
+          <FullscreenPanels player={player} settings={settings} setPreference={setPreference} />
         </aside>
         <section className="fullscreen-right">
           <div className="fullscreen-artwork"><img src={artwork(player.current)} alt={player.current.name ? `Artwork for ${player.current.name}` : 'Track artwork'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></div>
@@ -197,7 +192,7 @@ export default function App() {
   </div>;
 }
 
-function FullscreenPanels({ player, settings, onAmbientLyricChange }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; onAmbientLyricChange: (text: string) => void }) {
+function FullscreenPanels({ player, settings, setPreference }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void }) {
   const [panel, setPanel] = useState<'queue' | 'lyrics'>('lyrics');
   return <div className="fullscreen-panel-body">
     <div className="panel-switcher" role="tablist" aria-label="Player panels">
@@ -206,7 +201,7 @@ function FullscreenPanels({ player, settings, onAmbientLyricChange }: { player: 
     </div>
     {panel === 'queue'
       ? <QueuePanel player={player} />
-      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} onAmbientLyricChange={onAmbientLyricChange} />}
+      : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} />}
   </div>;
 }
 
@@ -462,54 +457,61 @@ function Library({ play, queueSong, liked, toggleLike, currentId, playing, liked
 }
 
 function SettingsView({ settings, setPreference, theme, setThemeConfig, setTheme, clear, notify, resetAll }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; setTheme: (value: ThemeConfig | ((current: ThemeConfig) => ThemeConfig)) => void; clear: () => void; notify: (message: string) => void; resetAll: () => void }) {
-  const [category, setCategory] = useState<'account'|'audio'|'lyrics'|'integrations'>('audio');
   const [customAccent, setCustomAccent] = useState(theme.accent);
   const confirmReset = () => { if (window.confirm('Reset ValoTune settings?')) resetAll(); };
   const row = (title: string, description: string, control: ReactNode) => <div className="setting-row"><div className="setting-copy"><b>{title}</b><span>{description}</span></div><div className="setting-control">{control}</div></div>;
   const toggle = (title: string, description: string, field: keyof Settings) => row(title, description, <button type="button" className={`setting-switch ${settings[field] ? 'on' : ''}`} role="switch" aria-checked={Boolean(settings[field])} onClick={() => setPreference(field, !settings[field] as Settings[typeof field])}><i /></button>);
   const slider = (title: string, description: string, field: keyof Settings, min: number, max: number, step: number, suffix='') => row(title, description, <div className="setting-slider"><input type="range" min={min} max={max} step={step} value={Number(settings[field])} onChange={e => setPreference(field, Number(e.target.value) as Settings[typeof field])}/><output>{Number(settings[field])}{suffix}</output></div>);
-  const categories = [['account','Account','Library and portability'],['audio','Audio & Playback','Sound and playback'],['lyrics','Lyrics & Visuals','Lyrics, themes and motion'],['integrations','Integrations','Providers and connections']] as const;
+  const section = (id: string, title: string, description: string, children: ReactNode) => <section className="settings-category" aria-labelledby={id}><div className="settings-category-head"><h2 id={id}>{title}</h2><p>{description}</p></div>{children}</section>;
   const preview = <div className="theme-preview"><div className="preview-track"><span className="preview-art">♫</span><span><b>Now Playing</b><small>ValoTune preview</small></span><button className="preview-play" type="button" aria-label="Preview play">▶</button></div><p className="preview-lyric">This is the line that is playing now</p></div>;
+
   return <section className="settings-page">
     <div className="settings-head"><small className="eyebrow">CONTROL CENTER</small><h1 className="page-heading">Settings</h1><p className="sub">Tune the player, visuals, and playback without leaving your music.</p></div>
-    <nav className="settings-tabs" aria-label="Settings categories">{categories.map(([id,label,desc]) => <button key={id} className={category===id?'active':''} onClick={()=>setCategory(id)}><b>{label}</b><span>{desc}</span></button>)}</nav>
     <div className="settings-column">
-      {category==='account' && <>
+      {section('settings-account','Account','Your local library, history, and data.',<>
         {row('Liked & history','Remove local listening data stored on this device.',<button className="setting-action" onClick={()=>{if(confirm('Clear liked songs and history?')) clear();}}>Clear</button>)}
-        {row('Information density','Choose how much content fits on screen.',<select value={theme.density} onChange={e=>setThemeConfig('density',e.target.value as ThemeConfig['density'])}><option value="compact">Compact</option><option value="comfortable">Comfortable</option><option value="spacious">Spacious</option></select>)}
-        {row('Navigation layout','Choose the primary navigation treatment.',<select value={theme.navigation} onChange={e=>setThemeConfig('navigation',e.target.value as ThemeConfig['navigation'])}><option value="sidebar">Left Sidebar</option><option value="top">Top Bar</option><option value="dock">Floating Pill Dock</option></select>)}
-        {row('Home feed','Choose the home feed composition.',<select value={theme.homeFeed} onChange={e=>setThemeConfig('homeFeed',e.target.value as ThemeConfig['homeFeed'])}><option value="editorial">Editorial + Rows</option><option value="grid">Dense Grid</option></select>)}
-        {row('Shape','Set the interface corner treatment.',<select value={theme.radius} onChange={e=>setThemeConfig('radius',e.target.value as ThemeConfig['radius'])}><option value="sharp">Sharp</option><option value="rounded">Rounded</option><option value="soft">Pill / Soft</option></select>)}
-        {row('Reset everything','Restore ValoTune defaults.',<button className="setting-action" onClick={confirmReset}>Reset</button>)}
-      </>}
-      {category==='audio' && <>
+        {row('Reset to defaults','Restore all ValoTune settings to their original values.',<button className="setting-action" onClick={confirmReset}>Reset</button>)}
+      </>)}
+
+      {section('settings-audio','Audio & Playback','Playback behavior, crossfade, normalization, and streaming quality.',<>
         {row('Default volume','Set the player starting level.',<div className="setting-slider"><input type="range" min="0" max="100" value={settings.volume} onChange={e=>setPreference('volume',Number(e.target.value))}/><output>{settings.volume}%</output></div>)}
         {row('Crossfade','Fade out before the next track begins.',<select value={settings.crossfade} onChange={e=>setPreference('crossfade',Number(e.target.value))}><option value="0">Off</option><option value="2">2 sec</option><option value="4">4 sec</option><option value="6">6 sec</option><option value="8">8 sec</option></select>)}
-        {toggle('Volume normalization','Keep playback level more consistent between tracks.', 'normalization')}
-        {row('Streaming quality','Preferred YouTube stream quality when available.',<select value={settings.streamingQuality} onChange={e=>setPreference('streamingQuality',e.target.value as Settings['streamingQuality'])}><option value="auto">Auto</option><option value="high">High</option><option value="standard">Standard</option><option value="data-saver">Data saver</option></select>)}
-        {toggle('Autoplay next','Continue into the next queued track.', 'autoplay')}
-        {row('Player bar','Docked full width or a floating island.',<select value={theme.playerStyle} onChange={e=>setThemeConfig('playerStyle',e.target.value as ThemeConfig['playerStyle'])}><option value="docked">Full-width Docked</option><option value="floating">Floating Island</option></select>)}
-        {row('Cover motion','Add restrained motion to active artwork.',<select value={theme.coverMotion} onChange={e=>setThemeConfig('coverMotion',e.target.value as ThemeConfig['coverMotion'])}><option value="static">Static</option><option value="tilt">Subtle Hover Tilt</option><option value="vinyl">Spinning Vinyl</option></select>)}
-      </>}
-      {category==='lyrics' && <>
-        <div className="theme-section"><div className="section-label">Presets & Moods</div><div className="theme-pills">{Object.entries(THEME_PRESETS).map(([id,p])=><button key={id} className={theme.preset===id?'active':''} onClick={()=>{const preset=id as ThemePreset; setTheme(current=>({...current,...THEME_PRESETS[preset],preset,glow:current.glow})); notify('Saved')}}>{THEME_PRESETS[id as ThemePreset].label}</button>)}</div>{preview}</div>
-        {row('Base surface','Pitch black, charcoal, or light.',<select value={theme.surface} onChange={e=>setThemeConfig('surface',e.target.value as ThemeConfig['surface'])}><option value="oled">Pitch Black</option><option value="charcoal">Dark Charcoal</option><option value="light">Soft Light</option></select>)}
-        <div className="theme-section"><div className="section-label">Accent color</div><div className="accent-grid">{ACCENT_SWATCHES.map((color,i)=><button key={i} className="accent-swatch" style={{'--swatch':color} as React.CSSProperties} aria-label="Accent swatch" onClick={()=>setThemeConfig('accent',color)} />)}<label className="accent-custom">Custom<input type="color" value={customAccent} onChange={e=>{setCustomAccent(e.target.value);setThemeConfig('accent',e.target.value)}}/></label></div></div>
-        {slider('Ambient background glow','Let the current cover subtly bleed into the background.', 'ambientGlow',0,40,1,'%')}
-        {row('Lyrics style','Choose how the active line is presented.',<select value={theme.lyricsStyle} onChange={e=>setThemeConfig('lyricsStyle',e.target.value as ThemeConfig['lyricsStyle'])}><option value="karaoke">Karaoke Spotlight</option><option value="teleprompter">Classic Teleprompter</option><option value="minimal">Minimal 2-Line Subtitle</option></select>)}
-        {slider('Lyrics sync speed','Adjust automatic lyric timing.', 'lyricsSyncSpeed',0.5,1.5,0.1,'x')}
-        {row('Font pairing','Choose the type system for the player.',<select value={theme.fontPairing} onChange={e=>setThemeConfig('fontPairing',e.target.value as ThemeConfig['fontPairing'])}><option value="geometric">Clean Geometric</option><option value="editorial">Editorial Serif</option><option value="mono">Monospace Tech</option></select>)}
-        {toggle('Reduce motion','Disable nonessential motion and transitions.', 'reduceMotion' as keyof Settings)}
-        {row('High contrast borders','Add crisp borders to controls and surfaces.',<button type="button" className={`setting-switch ${theme.highContrast?'on':''}`} role="switch" aria-checked={theme.highContrast} onClick={()=>setThemeConfig('highContrast',!theme.highContrast)}><i/></button>)}
-      </>}
-      {category==='integrations' && <>
-        {row('Lyrics provider','Select the source used for synchronized lyrics.',<select value={settings.lyricsProvider} onChange={e=>setPreference('lyricsProvider',e.target.value as Settings['lyricsProvider'])}><option value="lrclib">LRCLIB</option><option value="ytmusic">YouTube Music</option></select>)}
-        {row('Mobile navigation labels','Show text labels in the mobile dock.',<button type="button" className={`setting-switch ${settings.showNavLabels?'on':''}`} role="switch" aria-checked={settings.showNavLabels} onClick={()=>setPreference('showNavLabels',!settings.showNavLabels)}><i/></button>)}
+        {toggle('Volume normalization','Keep playback level more consistent between tracks.','normalization')}
+        {row('Audio quality','Choose the preferred stream quality when available.',<select value={settings.streamingQuality} onChange={e=>setPreference('streamingQuality',e.target.value as Settings['streamingQuality'])}><option value="auto">Auto</option><option value="high">High</option><option value="standard">Standard</option><option value="data-saver">Data saver</option></select>)}
+        {toggle('Autoplay next','Continue into the next queued track.','autoplay')}
+        {row('Player bar','Choose docked or floating playback controls.',<select value={theme.playerStyle} onChange={e=>setThemeConfig('playerStyle',e.target.value as ThemeConfig['playerStyle'])}><option value="docked">Docked</option><option value="floating">Floating</option></select>)}
+      </>)}
+
+      {section('settings-lyrics','Lyrics & Visuals','Lyrics behavior, sync, appearance, and restrained motion.',<>
+        <div className="theme-section"><div className="section-label">Theme</div><div className="theme-pills">{Object.entries(THEME_PRESETS).map(([id,p])=><button key={id} className={theme.preset===id?'active':''} onClick={()=>{const preset=id as ThemePreset; setTheme(current=>({...current,...THEME_PRESETS[preset],preset,glow:current.glow})); notify('Saved')}}>{p.label}</button>)}</div>{preview}</div>
+        {row('Base surface','Choose pitch black, charcoal, or light.',<select value={theme.surface} onChange={e=>setThemeConfig('surface',e.target.value as ThemeConfig['surface'])}><option value="oled">Pitch black</option><option value="charcoal">Charcoal</option><option value="light">Soft light</option></select>)}
+        <div className="theme-section"><div className="section-label">Accent color</div><div className="accent-grid">{ACCENT_SWATCHES.map((color,i)=><button key={i} className="accent-swatch" style={{'--swatch':color} as React.CSSProperties} aria-label={`Accent color ${i+1}`} onClick={()=>setThemeConfig('accent',color)} />)}<label className="accent-custom">Custom<input type="color" value={customAccent} onChange={e=>{setCustomAccent(e.target.value);setThemeConfig('accent',e.target.value)}}/></label></div></div>
+        {slider('Ambient glow','Let the current cover subtly influence the background.','ambientGlow',0,40,1,'%')}
+        {row('Lyrics style','Choose how the active line is presented.',<select value={theme.lyricsStyle} onChange={e=>setThemeConfig('lyricsStyle',e.target.value as ThemeConfig['lyricsStyle'])}><option value="karaoke">Karaoke spotlight</option><option value="teleprompter">Teleprompter</option><option value="minimal">Minimal</option></select>)}
+        {slider('Lyrics sync speed','Adjust how quickly the active line follows playback.','lyricsSyncSpeed',0.5,1.5,0.1,'x')}
+      </>)}
+
+      {section('settings-integrations','Integrations','Lyrics providers, home content, and portable theme settings.',<>
+        {row('Lyrics provider','Choose the source used for synchronized lyrics.',<select value={settings.lyricsProvider} onChange={e=>setPreference('lyricsProvider',e.target.value as Settings['lyricsProvider'])}><option value="lrclib">LRCLIB</option><option value="ytmusic">YouTube Music</option></select>)}
+        {row('Mobile navigation labels','Show text labels in the mobile navigation.',<button type="button" className={`setting-switch ${settings.showNavLabels?'on':''}`} role="switch" aria-checked={settings.showNavLabels} onClick={()=>setPreference('showNavLabels',!settings.showNavLabels)}><i/></button>)}
         {row('Home shelves','Show curated music rows on Home.',<button type="button" className={`setting-switch ${settings.showHomeShelves?'on':''}`} role="switch" aria-checked={settings.showHomeShelves} onClick={()=>setPreference('showHomeShelves',!settings.showHomeShelves)}><i/></button>)}
         {row('Genres & moods','Show discovery shortcuts on Home.',<button type="button" className={`setting-switch ${settings.showGenres?'on':''}`} role="switch" aria-checked={settings.showGenres} onClick={()=>setPreference('showGenres',!settings.showGenres)}><i/></button>)}
         {row('Share theme code','Copy a portable theme JSON/Base64 code.',<button className="setting-action" onClick={async()=>{const raw=JSON.stringify(theme);const code=btoa(unescape(encodeURIComponent(raw)));await navigator.clipboard?.writeText(code);notify('Theme code copied');}}>Copy</button>)}
         {row('Import theme','Paste a theme JSON/Base64 code.',<button className="setting-action" onClick={async()=>{const code=prompt('Paste theme code');if(!code)return;try{const raw=decodeURIComponent(escape(atob(code)));const parsed=JSON.parse(raw) as ThemeConfig;setTheme(parsed);notify('Theme imported')}catch{notify('Invalid theme code')}}}>Import</button>)}
-      </>}
+      </>)}
+
+      <details className="settings-advanced">
+        <summary><span><b>Advanced</b><small>Less-used interface and accessibility controls</small></span><strong aria-hidden="true">+</strong></summary>
+        <div className="settings-advanced-body">
+          {row('Information density','Choose how much content fits on screen.',<select value={theme.density} onChange={e=>setThemeConfig('density',e.target.value as ThemeConfig['density'])}><option value="compact">Compact</option><option value="comfortable">Comfortable</option><option value="spacious">Spacious</option></select>)}
+          {row('Navigation layout','Choose the primary navigation treatment.',<select value={theme.navigation} onChange={e=>setThemeConfig('navigation',e.target.value as ThemeConfig['navigation'])}><option value="sidebar">Left sidebar</option><option value="top">Top bar</option><option value="dock">Floating dock</option></select>)}
+          {row('Home feed','Choose the Home feed composition.',<select value={theme.homeFeed} onChange={e=>setThemeConfig('homeFeed',e.target.value as ThemeConfig['homeFeed'])}><option value="editorial">Editorial + rows</option><option value="grid">Dense grid</option></select>)}
+          {row('Shape','Set the interface corner treatment.',<select value={theme.radius} onChange={e=>setThemeConfig('radius',e.target.value as ThemeConfig['radius'])}><option value="sharp">Sharp</option><option value="rounded">Rounded</option><option value="soft">Soft</option></select>)}
+          {row('Font pairing','Choose the type system for the player.',<select value={theme.fontPairing} onChange={e=>setThemeConfig('fontPairing',e.target.value as ThemeConfig['fontPairing'])}><option value="geometric">Geometric</option><option value="editorial">Editorial</option><option value="mono">Monospace</option></select>)}
+          {row('Reduce motion','Disable nonessential motion and transitions.',<button type="button" className={`setting-switch ${theme.reduceMotion?'on':''}`} role="switch" aria-checked={theme.reduceMotion} onClick={()=>setThemeConfig('reduceMotion',!theme.reduceMotion)}><i/></button>)}
+          {row('High contrast borders','Add crisp borders to controls and surfaces.',<button type="button" className={`setting-switch ${theme.highContrast?'on':''}`} role="switch" aria-checked={theme.highContrast} onClick={()=>setThemeConfig('highContrast',!theme.highContrast)}><i/></button>)}
+        </div>
+      </details>
     </div>
   </section>;
 }
@@ -532,7 +534,7 @@ function parseLrc(value: string): LyricLine[] {
   }
   return lines.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
 }
-function LyricsPanel({ song, time, provider, onSeek, onAmbientLyricChange }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void; onAmbientLyricChange?: (text: string) => void }) {
+function LyricsPanel({ song, time, provider, onSeek }: { song: Song; time: number; provider: Settings['lyricsProvider']; onSeek?: (seconds: number) => void }) {
   const [record, setRecord] = useState<LyricsRecord | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
@@ -593,20 +595,14 @@ function LyricsPanel({ song, time, provider, onSeek, onAmbientLyricChange }: { s
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
 
   useEffect(() => {
-    if (!onAmbientLyricChange) return;
-    const text = status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null ? lines[currentLine].text : '';
-    onAmbientLyricChange(text);
-  }, [status, currentLine, lines, onAmbientLyricChange]);
-
-  useEffect(() => {
     if (manualScroll.current || !activeLine.current) return;
-    activeLine.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    activeLine.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [currentLine]);
 
   const onLyricsScroll = () => {
     manualScroll.current = true;
     window.clearTimeout(resumeTimer.current);
-    resumeTimer.current = window.setTimeout(() => { manualScroll.current = false; }, 1800);
+    resumeTimer.current = window.setTimeout(() => { manualScroll.current = false; }, 4500);
   };
 
   return <section className="lyrics-panel" aria-label="Song lyrics">

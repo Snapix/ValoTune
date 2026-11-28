@@ -70,10 +70,6 @@ export default function App() {
     setLiked(items => items.some(item => key(item) === key(song)) ? items.filter(item => key(item) !== key(song)) : [song, ...items]);
   }, [setLiked]);
   useEffect(() => {
-    if (settings.playerTheme !== 'blur') setSettings(current => ({ ...current, playerTheme: 'blur' }));
-  }, [settings.playerTheme, setSettings]);
-
-  useEffect(() => {
     if (!fullscreenPlayer) setFullscreenAmbientLyric('');
   }, [fullscreenPlayer]);
   useEffect(() => {
@@ -128,7 +124,7 @@ export default function App() {
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
-      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} theme={theme} setThemeConfig={setThemeConfig} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} notify={notify} resetAll={resetAll} />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} theme={theme} setThemeConfig={setThemeConfig} setTheme={setTheme} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} notify={notify} resetAll={resetAll} />}
       {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
     <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -465,7 +461,7 @@ function Library({ play, queueSong, liked, toggleLike, currentId, playing, liked
   </section>;
 }
 
-function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, notify, resetAll }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; clear: () => void; notify: (message: string) => void; resetAll: () => void }) {
+function SettingsView({ settings, setPreference, theme, setThemeConfig, setTheme, clear, notify, resetAll }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; setTheme: (value: ThemeConfig | ((current: ThemeConfig) => ThemeConfig)) => void; clear: () => void; notify: (message: string) => void; resetAll: () => void }) {
   const [category, setCategory] = useState<'account'|'audio'|'lyrics'|'integrations'>('audio');
   const [customAccent, setCustomAccent] = useState(theme.accent);
   const confirmReset = () => { if (window.confirm('Reset ValoTune settings?')) resetAll(); };

@@ -41,7 +41,7 @@ function loadYouTubeApi(): Promise<void> {
   return apiPromise;
 }
 
-export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (song: Song) => void) {
+export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (song: Song) => void, crossfadeSeconds = 0, normalization = false, streamingQuality: 'auto' | 'high' | 'standard' | 'data-saver' = 'auto') {
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<any>(null);
   const ready = useRef(false);
@@ -51,6 +51,13 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
   const autoplayRef = useRef(autoplay);
   const playedRef = useRef(onPlayed);
   const volumeRef = useRef(initialVolume);
+  const fadingRef = useRef(false);
+  const crossfadeRef = useRef(crossfadeSeconds);
+  const normalizationRef = useRef(normalization);
+  const qualityRef = useRef(streamingQuality);
+  crossfadeRef.current = crossfadeSeconds;
+  normalizationRef.current = normalization;
+  qualityRef.current = streamingQuality;
   const [current, setCurrent] = useState<Song | null>(null);
   const [queue, setQueue] = useState<Song[]>([]);
   const [playing, setPlaying] = useState(false);
@@ -118,7 +125,9 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
             if (cancelled) { event.target.destroy(); return; }
             player.current = event.target;
             ready.current = true;
-            event.target.setVolume(volumeRef.current);
+            event.target.setVolume(normalizationRef.current ? Math.min(volumeRef.current, 90) : volumeRef.current);
+            const q = qualityRef.current === 'high' ? 'hd1080' : qualityRef.current === 'standard' ? 'medium' : qualityRef.current === 'data-saver' ? 'small' : 'default';
+            try { event.target.setPlaybackQuality?.(q); } catch { /* optional YouTube API feature */ }
             if (pending.current) {
               const song = pending.current;
               pending.current = null;
@@ -153,9 +162,15 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
   useEffect(() => {
     volumeRef.current = Math.max(0, Math.min(100, initialVolume));
     setVolumeState(volumeRef.current);
-    if (ready.current) player.current?.setVolume(volumeRef.current);
+    if (ready.current) player.current?.setVolume(normalizationRef.current ? Math.min(volumeRef.current, 90) : volumeRef.current);
   }, [initialVolume]);
 
+
+  useEffect(() => {
+    if (!ready.current || !player.current) return;
+    const q = streamingQuality === 'high' ? 'hd1080' : streamingQuality === 'standard' ? 'medium' : streamingQuality === 'data-saver' ? 'small' : 'default';
+    try { player.current.setPlaybackQuality?.(q); } catch { /* optional YouTube API feature */ }
+  }, [streamingQuality]);
   const toggle = useCallback(() => {
     if (!ready.current || !player.current) return;
     const state = player.current.getPlayerState();

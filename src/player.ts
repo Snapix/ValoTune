@@ -41,7 +41,7 @@ function loadYouTubeApi(): Promise<void> {
   return apiPromise;
 }
 
-export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (song: Song) => void, crossfadeSeconds = 0, normalization = false, streamingQuality: 'auto' | 'high' | 'standard' | 'data-saver' = 'auto') {
+export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (song: Song) => void) {
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<any>(null);
   const ready = useRef(false);
@@ -51,13 +51,6 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
   const autoplayRef = useRef(autoplay);
   const playedRef = useRef(onPlayed);
   const volumeRef = useRef(initialVolume);
-  const fadingRef = useRef(false);
-  const crossfadeRef = useRef(crossfadeSeconds);
-  const normalizationRef = useRef(normalization);
-  const qualityRef = useRef(streamingQuality);
-  crossfadeRef.current = crossfadeSeconds;
-  normalizationRef.current = normalization;
-  qualityRef.current = streamingQuality;
   const [current, setCurrent] = useState<Song | null>(null);
   const [queue, setQueue] = useState<Song[]>([]);
   const [playing, setPlaying] = useState(false);
@@ -78,7 +71,7 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
   }, []);
 
   const play = useCallback((song: Song, list?: Song[]) => {
-    const valid = [...new Map((list?.length ? list : [song]).filter(item => item?.videoId).map(item => [item.videoId, item])).values()];
+    const valid = (list?.length ? list : [song]).filter(item => item?.videoId);
     if (!valid.length) return;
     queueRef.current = valid;
     setQueue(valid);
@@ -101,19 +94,15 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
 
   useEffect(() => {
     let cancelled = false;
-    let timer: number | undefined;
-    const tick = () => {
-      if (ready.current && player.current && player.current.getPlayerState?.() === window.YT?.PlayerState?.PLAYING) {
-        try {
-          const t = player.current.getCurrentTime();
-          const d = player.current.getDuration();
-          if (Number.isFinite(t)) setTime(t);
-          if (Number.isFinite(d) && d > 0) setDuration(d);
-        } catch { /* player may still be initializing */ }
-      }
-      timer = window.setTimeout(tick, 750);
-    };
-    timer = window.setTimeout(tick, 750);
+    const interval = window.setInterval(() => {
+      if (!ready.current || !player.current) return;
+      try {
+        const t = player.current.getCurrentTime();
+        const d = player.current.getDuration();
+        if (Number.isFinite(t)) setTime(t);
+        if (Number.isFinite(d) && d > 0) setDuration(d);
+      } catch { /* player may still be initializing */ }
+    }, 500);
 
     loadYouTubeApi().then(() => {
       if (cancelled || !host.current || !window.YT?.Player) return;
@@ -125,9 +114,7 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
             if (cancelled) { event.target.destroy(); return; }
             player.current = event.target;
             ready.current = true;
-            event.target.setVolume(normalizationRef.current ? Math.min(volumeRef.current, 90) : volumeRef.current);
-            const q = qualityRef.current === 'high' ? 'hd1080' : qualityRef.current === 'standard' ? 'medium' : qualityRef.current === 'data-saver' ? 'small' : 'default';
-            try { event.target.setPlaybackQuality?.(q); } catch { /* optional YouTube API feature */ }
+            event.target.setVolume(volumeRef.current);
             if (pending.current) {
               const song = pending.current;
               pending.current = null;
@@ -152,7 +139,7 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
     }).catch(error => console.warn(error.message));
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
+      window.clearInterval(interval);
       ready.current = false;
       try { player.current?.destroy(); } catch { /* ignore teardown errors */ }
       player.current = null;
@@ -162,15 +149,9 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
   useEffect(() => {
     volumeRef.current = Math.max(0, Math.min(100, initialVolume));
     setVolumeState(volumeRef.current);
-    if (ready.current) player.current?.setVolume(normalizationRef.current ? Math.min(volumeRef.current, 90) : volumeRef.current);
+    if (ready.current) player.current?.setVolume(volumeRef.current);
   }, [initialVolume]);
 
-
-  useEffect(() => {
-    if (!ready.current || !player.current) return;
-    const q = streamingQuality === 'high' ? 'hd1080' : streamingQuality === 'standard' ? 'medium' : streamingQuality === 'data-saver' ? 'small' : 'default';
-    try { player.current.setPlaybackQuality?.(q); } catch { /* optional YouTube API feature */ }
-  }, [streamingQuality]);
   const toggle = useCallback(() => {
     if (!ready.current || !player.current) return;
     const state = player.current.getPlayerState();
@@ -183,23 +164,6 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
     player.current.seekTo(target, true);
     setTime(target);
   }, [duration]);
-  const addToQueue = useCallback((song: Song) => {
-    if (!song?.videoId) return;
-    const list = queueRef.current;
-    if (list.some(item => item.videoId === song.videoId)) return;
-    const next = [...list, song];
-    queueRef.current = next;
-    setQueue(next);
-  }, []);
-  const removeFromQueue = useCallback((videoId: string) => {
-    if (!videoId || queueRef.current.length <= 1) return;
-    const removedIndex = queueRef.current.findIndex(item => item.videoId === videoId);
-    if (removedIndex < 0 || videoId === current?.videoId) return;
-    const next = queueRef.current.filter(item => item.videoId !== videoId);
-    queueRef.current = next;
-    if (removedIndex < indexRef.current) indexRef.current -= 1;
-    setQueue(next);
-  }, [current?.videoId]);
   const setVolume = useCallback((next: number) => {
     const safe = Math.max(0, Math.min(100, Number(next) || 0));
     volumeRef.current = safe;
@@ -207,5 +171,5 @@ export function usePlayer(initialVolume: number, autoplay: boolean, onPlayed: (s
     if (ready.current) player.current?.setVolume(safe);
   }, []);
 
-  return { host, current, queue, playing, time, duration, volume, play, addToQueue, removeFromQueue, toggle, seek, setVolume, next: () => step(1), prev: () => step(-1) };
+  return { host, current, queue, playing, time, duration, volume, play, toggle, seek, setVolume, next: () => step(1), prev: () => step(-1) };
 }

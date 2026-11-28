@@ -41,7 +41,7 @@ export default function App() {
     update();
     return () => { media.removeEventListener?.('change', update); window.removeEventListener('appinstalled', update); };
   }, []);
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'light', compactPlayer: false, playerTheme: 'blur', reduceMotion: false, ambientBackground: false, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'light', compactPlayer: false, playerTheme: 'blur', reduceMotion: false, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
@@ -75,7 +75,7 @@ export default function App() {
   const view: ViewProps = { play: player.play, queueSong: player.addToQueue, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
   const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
 
-  return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
+  return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <nav className="top-nav" aria-label="Primary navigation">
@@ -89,6 +89,12 @@ export default function App() {
       {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
       {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
+    <nav className="mobile-nav" aria-label="Mobile navigation">
+      {navItems.slice(0, 4).map((item, index) => <button key={item.label} className={index === tab ? 'active' : ''} onClick={() => setTab(index)} aria-current={index === tab ? 'page' : undefined}>
+        <span aria-hidden="true">{['⌂','♡','⌕','⚙'][index]}</span>
+        {settings.showNavLabels && <small>{item.label}</small>}
+      </button>)}
+    </nav>
     <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>
     {player.current && !fullscreenPlayer && <footer className="player" aria-label="Music player" onClick={event => {
       if (!(event.target as HTMLElement).closest('button,input,label')) setFullscreenPlayer(true);
@@ -219,9 +225,10 @@ function Shelf({ section, play, queueSong, liked, toggleLike, currentId, playing
 function Card({ song, list, play, queueSong, liked, toggleLike, currentId, playing }: { song: Song; list: Song[] } & ViewProps) {
   const isCurrent = currentId === song.videoId;
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [dominant, setDominant] = useState('#3a3530');
   useEffect(() => {
-    setFailed(false);
+    setFailed(false); setLoaded(false);
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.onload = () => {
@@ -243,9 +250,9 @@ function Card({ song, list, play, queueSong, liked, toggleLike, currentId, playi
   return <article className={`card ${isCurrent ? 'is-current' : ''}`}>
     <div className="cover-wrap">
       <button className="cover-button" style={{ '--cover-color': dominant } as CSSProperties} onClick={() => play(song, list)} aria-label={`Play ${song.name}`}>
-        {!failed && <img src={song.thumb} alt="" loading="lazy" onError={() => setFailed(true)} />}
+        {!failed && <img src={song.thumb} alt="" loading="lazy" onLoad={() => setLoaded(true)} onError={() => { setFailed(true); setLoaded(false); }} />}
         {failed && <span className="cover-fallback" aria-hidden="true">♫</span>}
-        <span className="cover-skeleton" aria-hidden="true" />
+        <span className="cover-skeleton" style={{ opacity: loaded || failed ? 0 : 1 }} aria-hidden="true" />
         <span className="cover-play">{isCurrent && playing ? 'Ⅱ' : '▶'}</span>
       </button>
       <button className={liked.has(song.videoId) ? 'cover-like liked' : 'cover-like'} onClick={() => toggleLike(song)} aria-label={liked.has(song.videoId) ? 'Unlike song' : 'Like song'}>{liked.has(song.videoId) ? '♥' : '♡'}</button>
@@ -427,7 +434,6 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
     setPreference('compactPlayer', false);
     setPreference('playerTheme', 'blur');
     setPreference('reduceMotion', false);
-    setPreference('ambientBackground', false);
     setPreference('showHomeShelves', true);
     setPreference('showGenres', true);
     setPreference('showNavLabels', true);
@@ -454,7 +460,6 @@ function SettingsView({ settings, setPreference, clear }: { settings: Settings; 
         <div className="panel"><div><b>Theme</b><span>Choose a warm light or warm dark canvas.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])}><option value="light">Warm light</option><option value="dark">Warm dark</option><option value="system">System</option></select></div>
         <div className="panel"><div><b>Accent</b><span>Clay is reserved for the primary action.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
         {toggle('Reduce motion', 'Use minimal transitions and stop nonessential motion.', 'reduceMotion')}
-        {toggle('Ambient artwork wash', 'Use the cover colour as a restrained page accent.', 'ambientBackground')}
       </div>}
       {category === 'player' && <div className="settings-group">
         <div className="settings-title"><h2>Player</h2><p>Playback behavior and queue controls.</p></div>

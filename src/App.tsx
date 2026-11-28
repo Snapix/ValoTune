@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Capacitor } from '@capacitor/core';
 import ElasticSlider from './components/ElasticSlider';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
@@ -110,7 +110,7 @@ export default function App() {
       </div>
       <div className="volume"><VolumeIcon size={20} aria-hidden="true" /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
     </footer>}
-    {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className="fullscreen-player" data-player-theme="blur" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
+    {fullscreenPlayer && player.current && <section className="fullscreen-player" data-player-theme="blur" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
       <div className="fullscreen-blur-backdrop" aria-hidden="true" />
       <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Close player">Close</button>
       {fullscreenAmbientLyric && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span key={fullscreenAmbientLyric}>{fullscreenAmbientLyric}</span></div>}
@@ -242,7 +242,7 @@ function Card({ song, list, play, queueSong, liked, toggleLike, currentId, playi
   }, [song.thumb]);
   return <article className={`card ${isCurrent ? 'is-current' : ''}`}>
     <div className="cover-wrap">
-      <button className="cover-button" style={{ '--cover-color': dominant } as React.CSSProperties} onClick={() => play(song, list)} aria-label={`Play ${song.name}`}>
+      <button className="cover-button" style={{ '--cover-color': dominant } as CSSProperties} onClick={() => play(song, list)} aria-label={`Play ${song.name}`}>
         {!failed && <img src={song.thumb} alt="" loading="lazy" onError={() => setFailed(true)} />}
         {failed && <span className="cover-fallback" aria-hidden="true">♫</span>}
         <span className="cover-skeleton" aria-hidden="true" />

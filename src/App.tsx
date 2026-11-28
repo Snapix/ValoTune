@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Capacitor } from '@capacitor/core';
 import ElasticSlider from './components/ElasticSlider';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
@@ -59,7 +59,7 @@ export default function App() {
   const [fullscreenAmbientLyric, setFullscreenAmbientLyric] = useState('');
   const toastTimer = useRef<number | undefined>(undefined);
   const onPlayed = useCallback((song: Song) => setRecent(items => [song, ...items.filter(item => item.videoId !== song.videoId)].slice(0, 50)), [setRecent]);
-  const player = usePlayer(settings.volume, settings.autoplay, onPlayed);
+  const player = usePlayer(settings.volume, settings.autoplay, onPlayed, settings.crossfade, settings.normalization, settings.streamingQuality);
   const likedIds = useMemo(() => new Set(liked.map(key)), [liked]);
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -112,7 +112,7 @@ export default function App() {
     root.dataset.theme = theme.preset;
   }, [theme]);
 
-  return <div className="app" data-player-layout={theme.playerStyle} data-reduce-motion={theme.reduceMotion ? 'true' : 'false'} data-navigation={theme.navigation} data-home-feed={theme.homeFeed} data-cover-motion={theme.coverMotion} data-lyrics-style={theme.lyricsStyle} data-density={theme.density} data-high-contrast={theme.highContrast ? 'true' : 'false'}>
+  return <div className="app" data-player-layout={theme.playerStyle} data-reduce-motion={theme.reduceMotion ? 'true' : 'false'} data-navigation={theme.navigation} data-home-feed={theme.homeFeed} data-cover-motion={theme.coverMotion} data-lyrics-style={theme.lyricsStyle} data-density={theme.density} data-playing={player.playing ? 'true' : 'false'} data-high-contrast={theme.highContrast ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <nav className="top-nav" aria-label="Primary navigation">
@@ -469,7 +469,7 @@ function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, n
     if (!window.confirm('Reset ValoTune settings?')) return;
     setTheme(DEFAULT_THEME); setSettings({ volume: 70, autoplay: true, crossfade: 0, normalization: false, streamingQuality: 'auto', lyricsSyncSpeed: 1, ambientGlow: 18, lyricsProvider: 'lrclib', showHomeShelves: true, showGenres: true, showNavLabels: true }); notify('Saved');
   };
-  const row = (title: string, description: string, control: React.ReactNode) => <div className="setting-row"><div className="setting-copy"><b>{title}</b><span>{description}</span></div><div className="setting-control">{control}</div></div>;
+  const row = (title: string, description: string, control: ReactNode) => <div className="setting-row"><div className="setting-copy"><b>{title}</b><span>{description}</span></div><div className="setting-control">{control}</div></div>;
   const toggle = (title: string, description: string, field: keyof Settings) => row(title, description, <button type="button" className={`setting-switch ${settings[field] ? 'on' : ''}`} role="switch" aria-checked={Boolean(settings[field])} onClick={() => setPreference(field, !settings[field] as Settings[typeof field])}><i /></button>);
   const slider = (title: string, description: string, field: keyof Settings, min: number, max: number, step: number, suffix='') => row(title, description, <div className="setting-slider"><input type="range" min={min} max={max} step={step} value={Number(settings[field])} onChange={e => setPreference(field, Number(e.target.value) as Settings[typeof field])}/><output>{Number(settings[field])}{suffix}</output></div>);
   const categories = [['account','Account','Library and portability'],['audio','Audio & Playback','Sound and playback'],['lyrics','Lyrics & Visuals','Lyrics, themes and motion'],['integrations','Integrations','Providers and connections']] as const;

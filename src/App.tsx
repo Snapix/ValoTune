@@ -87,6 +87,11 @@ export default function App() {
     setSettings(current => ({ ...current, [field]: value }));
     notify('Saved');
   };
+  const resetAll = () => {
+    setTheme(DEFAULT_THEME);
+    setSettings({ volume: 70, autoplay: true, crossfade: 0, normalization: false, streamingQuality: 'auto', lyricsSyncSpeed: 1, ambientGlow: 18, lyricsProvider: 'lrclib', showHomeShelves: true, showGenres: true, showNavLabels: true });
+    notify('Saved');
+  };
   const setThemeConfig = <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => {
     setTheme(current => ({ ...current, [field]: value }));
     notify('Saved');
@@ -123,7 +128,7 @@ export default function App() {
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
-      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} theme={theme} setThemeConfig={setThemeConfig} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} notify={notify} />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} theme={theme} setThemeConfig={setThemeConfig} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} notify={notify} resetAll={resetAll} />}
       {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
     <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -460,13 +465,10 @@ function Library({ play, queueSong, liked, toggleLike, currentId, playing, liked
   </section>;
 }
 
-function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, notify }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; clear: () => void; notify: (message: string) => void }) {
+function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, notify, resetAll }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; clear: () => void; notify: (message: string) => void; resetAll: () => void }) {
   const [category, setCategory] = useState<'account'|'audio'|'lyrics'|'integrations'>('audio');
   const [customAccent, setCustomAccent] = useState(theme.accent);
-  const resetAll = () => {
-    if (!window.confirm('Reset ValoTune settings?')) return;
-    setTheme(DEFAULT_THEME); setSettings({ volume: 70, autoplay: true, crossfade: 0, normalization: false, streamingQuality: 'auto', lyricsSyncSpeed: 1, ambientGlow: 18, lyricsProvider: 'lrclib', showHomeShelves: true, showGenres: true, showNavLabels: true }); notify('Saved');
-  };
+  const confirmReset = () => { if (window.confirm('Reset ValoTune settings?')) resetAll(); };
   const row = (title: string, description: string, control: ReactNode) => <div className="setting-row"><div className="setting-copy"><b>{title}</b><span>{description}</span></div><div className="setting-control">{control}</div></div>;
   const toggle = (title: string, description: string, field: keyof Settings) => row(title, description, <button type="button" className={`setting-switch ${settings[field] ? 'on' : ''}`} role="switch" aria-checked={Boolean(settings[field])} onClick={() => setPreference(field, !settings[field] as Settings[typeof field])}><i /></button>);
   const slider = (title: string, description: string, field: keyof Settings, min: number, max: number, step: number, suffix='') => row(title, description, <div className="setting-slider"><input type="range" min={min} max={max} step={step} value={Number(settings[field])} onChange={e => setPreference(field, Number(e.target.value) as Settings[typeof field])}/><output>{Number(settings[field])}{suffix}</output></div>);
@@ -482,7 +484,7 @@ function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, n
         {row('Navigation layout','Choose the primary navigation treatment.',<select value={theme.navigation} onChange={e=>setThemeConfig('navigation',e.target.value as ThemeConfig['navigation'])}><option value="sidebar">Left Sidebar</option><option value="top">Top Bar</option><option value="dock">Floating Pill Dock</option></select>)}
         {row('Home feed','Choose the home feed composition.',<select value={theme.homeFeed} onChange={e=>setThemeConfig('homeFeed',e.target.value as ThemeConfig['homeFeed'])}><option value="editorial">Editorial + Rows</option><option value="grid">Dense Grid</option></select>)}
         {row('Shape','Set the interface corner treatment.',<select value={theme.radius} onChange={e=>setThemeConfig('radius',e.target.value as ThemeConfig['radius'])}><option value="sharp">Sharp</option><option value="rounded">Rounded</option><option value="soft">Pill / Soft</option></select>)}
-        {row('Reset everything','Restore ValoTune defaults.',<button className="setting-action" onClick={resetAll}>Reset</button>)}
+        {row('Reset everything','Restore ValoTune defaults.',<button className="setting-action" onClick={confirmReset}>Reset</button>)}
       </>}
       {category==='audio' && <>
         {row('Default volume','Set the player starting level.',<div className="setting-slider"><input type="range" min="0" max="100" value={settings.volume} onChange={e=>setPreference('volume',Number(e.target.value))}/><output>{settings.volume}%</output></div>)}

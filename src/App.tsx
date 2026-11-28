@@ -5,9 +5,18 @@ import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } fr
 import { usePlayer } from './player';
 import './stability.css';
 import { useLocal } from './store';
-import { fmt, type Artist, type Section, type Settings, type Song } from './types';
+import { fmt, type Artist, type Section, type Settings, type Song, type ThemeConfig, type ThemePreset } from './types';
 
-const ACCENTS = ['#2f2d2a', '#d97757', '#8f6f52', '#6f6258'];
+const THEME_PRESETS: Record<ThemePreset, { label: string; surface: ThemeConfig['surface']; accent: string; dynamicArt: boolean }> = {
+  oled: { label: 'OLED Pitch Black', surface: 'oled', accent: '#ffffff', dynamicArt: false },
+  midnight: { label: 'Midnight Slate', surface: 'charcoal', accent: '#8ab4ff', dynamicArt: false },
+  vinyl: { label: 'Warm Vinyl', surface: 'charcoal', accent: '#d59a5b', dynamicArt: false },
+  paper: { label: 'Paper Light', surface: 'light', accent: '#242424', dynamicArt: false },
+  adaptive: { label: 'Adaptive Cover Art', surface: 'charcoal', accent: '#ffffff', dynamicArt: true }
+};
+const ACCENT_SWATCHES = ['#ffffff','#8ab4ff','#d59a5b','#e58b75','#8dd3a8','#c5a7ff','#62c7d9','#f2cf5b'];
+const DEFAULT_THEME: ThemeConfig = { preset: 'midnight', surface: 'charcoal', accent: '#8ab4ff', dynamicArt: false, glow: 18, density: 'comfortable', navigation: 'top', homeFeed: 'editorial', radius: 'rounded', playerStyle: 'docked', coverMotion: 'tilt', lyricsStyle: 'karaoke', fontPairing: 'geometric', reduceMotion: false, highContrast: false };
+
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
 const TABS = ['Home', 'Library', 'Discover', 'Settings', 'App'];
 type SearchData = { songs: Song[]; artists: Artist[] };
@@ -41,7 +50,8 @@ export default function App() {
     update();
     return () => { media.removeEventListener?.('change', update); window.removeEventListener('appinstalled', update); };
   }, []);
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'light', compactPlayer: false, playerTheme: 'blur', reduceMotion: false, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { volume: 70, autoplay: true, crossfade: 0, normalization: false, streamingQuality: 'auto', lyricsSyncSpeed: 1, ambientGlow: 18, lyricsProvider: 'lrclib', showHomeShelves: true, showGenres: true, showNavLabels: true });
+  const [theme, setTheme] = useLocal<ThemeConfig>('app-theme', DEFAULT_THEME);
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
@@ -73,9 +83,36 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [fullscreenPlayer]);
   const view: ViewProps = { play: player.play, queueSong: player.addToQueue, liked: likedIds, toggleLike, currentId: player.current?.videoId, playing: player.playing };
-  const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => setSettings(current => ({ ...current, [field]: value }));
+  const setPreference = <K extends keyof Settings>(field: K, value: Settings[K]) => {
+    setSettings(current => ({ ...current, [field]: value }));
+    notify('Saved');
+  };
+  const setThemeConfig = <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => {
+    setTheme(current => ({ ...current, [field]: value }));
+    notify('Saved');
+  };
+  useEffect(() => {
+    const root = document.documentElement;
+    const preset = THEME_PRESETS[theme.preset];
+    const surface = theme.surface === 'oled' ? '#000000' : theme.surface === 'light' ? '#FAFAFA' : '#121214';
+    const text = theme.surface === 'light' ? '#111111' : '#F5F5F5';
+    const muted = theme.surface === 'light' ? '#6B6B6B' : '#9A9AA0';
+    const elevated = theme.surface === 'light' ? '#FFFFFF' : '#1B1B1F';
+    const accent = theme.accent || preset.accent;
+    const hex = accent.replace('#','');
+    const n = Number.parseInt(hex.length === 3 ? hex.split('').map(c => c+c).join('') : hex, 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const luminance = (0.2126*r + 0.7152*g + 0.0722*b) / 255;
+    const fg = luminance > 0.58 ? '#000000' : '#ffffff';
+    root.style.setProperty('--bg-base', surface); root.style.setProperty('--bg-surface', elevated); root.style.setProperty('--bg-elevated', theme.surface === 'light' ? '#F2F2F2' : '#242429');
+    root.style.setProperty('--text-primary', text); root.style.setProperty('--text-muted', muted); root.style.setProperty('--accent', accent); root.style.setProperty('--accent-fg', fg);
+    root.style.setProperty('--spacing-scale', theme.density === 'compact' ? '.82' : theme.density === 'spacious' ? '1.22' : '1');
+    root.style.setProperty('--radius-base', theme.radius === 'sharp' ? '4px' : theme.radius === 'soft' ? '20px' : '12px');
+    root.style.setProperty('--ambient-glow', String(Math.min(40, Math.max(0, theme.glow ?? 0))));
+    root.dataset.theme = theme.preset;
+  }, [theme]);
 
-  return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
+  return <div className="app" data-player-layout={theme.playerStyle} data-reduce-motion={theme.reduceMotion ? 'true' : 'false'} data-navigation={theme.navigation} data-home-feed={theme.homeFeed} data-cover-motion={theme.coverMotion} data-lyrics-style={theme.lyricsStyle} data-density={theme.density} data-high-contrast={theme.highContrast ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
       <nav className="top-nav" aria-label="Primary navigation">
@@ -86,7 +123,7 @@ export default function App() {
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
-      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} theme={theme} setThemeConfig={setThemeConfig} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} notify={notify} />}
       {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
     <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -425,66 +462,58 @@ function Library({ play, queueSong, liked, toggleLike, currentId, playing, liked
 
 function SettingsView({ settings, setPreference, clear }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; clear: () => void }) {
   const [category, setCategory] = useState<'theme' | 'player' | 'lyrics' | 'home' | 'data'>('theme');
-  const resetPreferences = () => {
-    if (!window.confirm('Reset ValoTune preferences to their defaults?')) return;
-    setPreference('accent', ACCENTS[0]);
-    setPreference('volume', 70);
-    setPreference('autoplay', true);
-    setPreference('theme', 'light');
-    setPreference('compactPlayer', false);
-    setPreference('playerTheme', 'blur');
-    setPreference('reduceMotion', false);
-    setPreference('showHomeShelves', true);
-    setPreference('showGenres', true);
-    setPreference('showNavLabels', true);
-    setPreference('lyricsProvider', 'lrclib');
+function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, notify }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; clear: () => void; notify: (message: string) => void }) {
+  const [category, setCategory] = useState<'account'|'audio'|'lyrics'|'integrations'>('audio');
+  const [customAccent, setCustomAccent] = useState(theme.accent);
+  const resetAll = () => {
+    if (!window.confirm('Reset ValoTune settings?')) return;
+    setTheme(DEFAULT_THEME); setSettings({ volume: 70, autoplay: true, crossfade: 0, normalization: false, streamingQuality: 'auto', lyricsSyncSpeed: 1, ambientGlow: 18, lyricsProvider: 'lrclib', showHomeShelves: true, showGenres: true, showNavLabels: true }); notify('Saved');
   };
-  const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'showHomeShelves' | 'showGenres' | 'showNavLabels' | 'autoplay') => (
-    <div className="panel" key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
-  );
-  const categories = [
-    ['theme', 'Theming', 'Palette and surface'],
-    ['player', 'Player', 'Playback, queue and controls'],
-    ['lyrics', 'Lyrics', 'Source and synchronized playback'],
-    ['home', 'Home & Navigation', 'Shelves and mobile navigation'],
-    ['data', 'Data & Reset', 'Local library and preferences']
-  ] as const;
+  const row = (title: string, description: string, control: React.ReactNode) => <div className="setting-row"><div className="setting-copy"><b>{title}</b><span>{description}</span></div><div className="setting-control">{control}</div></div>;
+  const toggle = (title: string, description: string, field: keyof Settings) => row(title, description, <button type="button" className={`setting-switch ${settings[field] ? 'on' : ''}`} role="switch" aria-checked={Boolean(settings[field])} onClick={() => setPreference(field, !settings[field] as Settings[typeof field])}><i /></button>);
+  const slider = (title: string, description: string, field: keyof Settings, min: number, max: number, step: number, suffix='') => row(title, description, <div className="setting-slider"><input type="range" min={min} max={max} step={step} value={Number(settings[field])} onChange={e => setPreference(field, Number(e.target.value) as Settings[typeof field])}/><output>{Number(settings[field])}{suffix}</output></div>);
+  const categories = [['account','Account','Library and portability'],['audio','Audio & Playback','Sound and playback'],['lyrics','Lyrics & Visuals','Lyrics, themes and motion'],['integrations','Integrations','Providers and connections']] as const;
+  const preview = <div className="theme-preview"><div className="preview-track"><span className="preview-art">♫</span><span><b>Now Playing</b><small>ValoTune preview</small></span><button className="preview-play" type="button" aria-label="Preview play">▶</button></div><p className="preview-lyric">This is the line that is playing now</p></div>;
   return <section className="settings-page">
-    <small className="eyebrow">PREFERENCES</small><h1 className="page-heading">Settings</h1><p className="sub">Practical controls. Every change is saved locally.</p>
-    <nav className="settings-categories" aria-label="Settings categories">
-      {categories.map(([id, label, description]) => <button key={id} className={category === id ? 'active' : ''} onClick={() => setCategory(id as typeof category)}><b>{label}</b><span>{description}</span></button>)}
-    </nav>
-    <div className="settings-category-panel">
-      {category === 'theme' && <div className="settings-group">
-        <div className="settings-title"><h2>Theming</h2><p>Warm editorial surfaces, restrained contrast, and no decorative effects.</p></div>
-        <div className="panel"><div><b>Theme</b><span>Choose a warm light or warm dark canvas.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])}><option value="light">Warm light</option><option value="dark">Warm dark</option><option value="system">System</option></select></div>
-        <div className="panel"><div><b>Accent</b><span>Clay is reserved for the primary action.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
-        {toggle('Reduce motion', 'Use minimal transitions and stop nonessential motion.', 'reduceMotion')}
-      </div>}
-      {category === 'player' && <div className="settings-group">
-        <div className="settings-title"><h2>Player</h2><p>Playback behavior and queue controls.</p></div>
-        {toggle('Compact player', 'Use a shorter bottom player on larger screens.', 'compactPlayer')}
-        <div className="panel"><div><b>Default volume</b><span>{Math.round(settings.volume)}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div>
-        {toggle('Autoplay next', 'Continue to the next song when a track ends.', 'autoplay')}
-        <div className="settings-note"><b>Queue behavior</b><span>Use + on any track to append it. Duplicate tracks are ignored.</span></div>
-      </div>}
-      {category === 'lyrics' && <div className="settings-group">
-        <div className="settings-title"><h2>Lyrics</h2><p>Synchronized lyrics are interactive and seek the player directly.</p></div>
-        <div className="panel"><div><b>Lyrics source</b><span>LRCLIB provides synchronized lyrics when available.</span></div><select className="settings-select" value={settings.lyricsProvider} onChange={event => setPreference('lyricsProvider', event.target.value as Settings['lyricsProvider'])}><option value="lrclib">LRCLIB</option><option value="ytmusic">YouTube Music</option></select></div>
-        <div className="settings-note"><b>Sync</b><span>Click a timestamped lyric line to seek. Manual scrolling pauses automatic centering.</span></div>
-      </div>}
-      {category === 'home' && <div className="settings-group">
-        <div className="settings-title"><h2>Home & Navigation</h2><p>Reduce clutter on smaller screens.</p></div>
-        {toggle('Music shelves', 'Show curated song rows on the home screen.', 'showHomeShelves')}
-        {toggle('Explore by mood', 'Show genre and mood shortcuts.', 'showGenres')}
-        {toggle('Mobile navigation labels', 'Show text labels under the mobile navigation.', 'showNavLabels')}
-      </div>}
-      {category === 'data' && <div className="settings-group">
-        <div className="settings-title"><h2>Data & Reset</h2><p>Manage data stored in this browser.</p></div>
-        <div className="panel"><div><b>Clear library</b><span>Remove liked songs and listening history.</span></div><button className="btn" onClick={() => { if (window.confirm('Clear liked songs and listening history?')) clear(); }}>Clear data</button></div>
-        <div className="panel"><div><b>Reset preferences</b><span>Restore the default ValoTune settings.</span></div><button className="btn" onClick={resetPreferences}>Reset settings</button></div>
-        <p className="about">ValoTune stores preferences and library data locally. Playback uses YouTube; lyrics use the selected provider.</p>
-      </div>}
+    <div className="settings-head"><small className="eyebrow">CONTROL CENTER</small><h1 className="page-heading">Settings</h1><p className="sub">Tune the player, visuals, and playback without leaving your music.</p></div>
+    <nav className="settings-tabs" aria-label="Settings categories">{categories.map(([id,label,desc]) => <button key={id} className={category===id?'active':''} onClick={()=>setCategory(id)}><b>{label}</b><span>{desc}</span></button>)}</nav>
+    <div className="settings-column">
+      {category==='account' && <>
+        {row('Liked & history','Remove local listening data stored on this device.',<button className="setting-action" onClick={()=>{if(confirm('Clear liked songs and history?')) clear();}}>Clear</button>)}
+        {row('Information density','Choose how much content fits on screen.',<select value={theme.density} onChange={e=>setThemeConfig('density',e.target.value as ThemeConfig['density'])}><option value="compact">Compact</option><option value="comfortable">Comfortable</option><option value="spacious">Spacious</option></select>)}
+        {row('Navigation layout','Choose the primary navigation treatment.',<select value={theme.navigation} onChange={e=>setThemeConfig('navigation',e.target.value as ThemeConfig['navigation'])}><option value="sidebar">Left Sidebar</option><option value="top">Top Bar</option><option value="dock">Floating Pill Dock</option></select>)}
+        {row('Home feed','Choose the home feed composition.',<select value={theme.homeFeed} onChange={e=>setThemeConfig('homeFeed',e.target.value as ThemeConfig['homeFeed'])}><option value="editorial">Editorial + Rows</option><option value="grid">Dense Grid</option></select>)}
+        {row('Shape','Set the interface corner treatment.',<select value={theme.radius} onChange={e=>setThemeConfig('radius',e.target.value as ThemeConfig['radius'])}><option value="sharp">Sharp</option><option value="rounded">Rounded</option><option value="soft">Pill / Soft</option></select>)}
+        {row('Reset everything','Restore ValoTune defaults.',<button className="setting-action" onClick={resetAll}>Reset</button>)}
+      </>}
+      {category==='audio' && <>
+        {row('Default volume','Set the player starting level.',<div className="setting-slider"><input type="range" min="0" max="100" value={settings.volume} onChange={e=>setPreference('volume',Number(e.target.value))}/><output>{settings.volume}%</output></div>)}
+        {row('Crossfade','Fade out before the next track begins.',<select value={settings.crossfade} onChange={e=>setPreference('crossfade',Number(e.target.value))}><option value="0">Off</option><option value="2">2 sec</option><option value="4">4 sec</option><option value="6">6 sec</option><option value="8">8 sec</option></select>)}
+        {toggle('Volume normalization','Keep playback level more consistent between tracks.', 'normalization')}
+        {row('Streaming quality','Preferred YouTube stream quality when available.',<select value={settings.streamingQuality} onChange={e=>setPreference('streamingQuality',e.target.value as Settings['streamingQuality'])}><option value="auto">Auto</option><option value="high">High</option><option value="standard">Standard</option><option value="data-saver">Data saver</option></select>)}
+        {toggle('Autoplay next','Continue into the next queued track.', 'autoplay')}
+        {row('Player bar','Docked full width or a floating island.',<select value={theme.playerStyle} onChange={e=>setThemeConfig('playerStyle',e.target.value as ThemeConfig['playerStyle'])}><option value="docked">Full-width Docked</option><option value="floating">Floating Island</option></select>)}
+        {row('Cover motion','Add restrained motion to active artwork.',<select value={theme.coverMotion} onChange={e=>setThemeConfig('coverMotion',e.target.value as ThemeConfig['coverMotion'])}><option value="static">Static</option><option value="tilt">Subtle Hover Tilt</option><option value="vinyl">Spinning Vinyl</option></select>)}
+      </>}
+      {category==='lyrics' && <>
+        <div className="theme-section"><div className="section-label">Presets & Moods</div><div className="theme-pills">{Object.entries(THEME_PRESETS).map(([id,p])=><button key={id} className={theme.preset===id?'active':''} onClick={()=>{const preset=id as ThemePreset; setTheme(current=>({...current,...THEME_PRESETS[preset],preset,glow:current.glow})); notify('Saved')}}>{THEME_PRESETS[id as ThemePreset].label}</button>)}</div>{preview}</div>
+        {row('Base surface','Pitch black, charcoal, or light.',<select value={theme.surface} onChange={e=>setThemeConfig('surface',e.target.value as ThemeConfig['surface'])}><option value="oled">Pitch Black</option><option value="charcoal">Dark Charcoal</option><option value="light">Soft Light</option></select>)}
+        <div className="theme-section"><div className="section-label">Accent color</div><div className="accent-grid">{ACCENT_SWATCHES.map((color,i)=><button key={i} className="accent-swatch" style={{'--swatch':color} as React.CSSProperties} aria-label="Accent swatch" onClick={()=>setThemeConfig('accent',color)} />)}<label className="accent-custom">Custom<input type="color" value={customAccent} onChange={e=>{setCustomAccent(e.target.value);setThemeConfig('accent',e.target.value)}}/></label></div></div>
+        {slider('Ambient background glow','Let the current cover subtly bleed into the background.', 'ambientGlow',0,40,1,'%')}
+        {row('Lyrics style','Choose how the active line is presented.',<select value={theme.lyricsStyle} onChange={e=>setThemeConfig('lyricsStyle',e.target.value as ThemeConfig['lyricsStyle'])}><option value="karaoke">Karaoke Spotlight</option><option value="teleprompter">Classic Teleprompter</option><option value="minimal">Minimal 2-Line Subtitle</option></select>)}
+        {slider('Lyrics sync speed','Adjust automatic lyric timing.', 'lyricsSyncSpeed',0.5,1.5,0.1,'x')}
+        {row('Font pairing','Choose the type system for the player.',<select value={theme.fontPairing} onChange={e=>setThemeConfig('fontPairing',e.target.value as ThemeConfig['fontPairing'])}><option value="geometric">Clean Geometric</option><option value="editorial">Editorial Serif</option><option value="mono">Monospace Tech</option></select>)}
+        {toggle('Reduce motion','Disable nonessential motion and transitions.', 'reduceMotion' as keyof Settings)}
+        {row('High contrast borders','Add crisp borders to controls and surfaces.',<button type="button" className={`setting-switch ${theme.highContrast?'on':''}`} role="switch" aria-checked={theme.highContrast} onClick={()=>setThemeConfig('highContrast',!theme.highContrast)}><i/></button>)}
+      </>}
+      {category==='integrations' && <>
+        {row('Lyrics provider','Select the source used for synchronized lyrics.',<select value={settings.lyricsProvider} onChange={e=>setPreference('lyricsProvider',e.target.value as Settings['lyricsProvider'])}><option value="lrclib">LRCLIB</option><option value="ytmusic">YouTube Music</option></select>)}
+        {row('Mobile navigation labels','Show text labels in the mobile dock.',<button type="button" className={`setting-switch ${settings.showNavLabels?'on':''}`} role="switch" aria-checked={settings.showNavLabels} onClick={()=>setPreference('showNavLabels',!settings.showNavLabels)}><i/></button>)}
+        {row('Home shelves','Show curated music rows on Home.',<button type="button" className={`setting-switch ${settings.showHomeShelves?'on':''}`} role="switch" aria-checked={settings.showHomeShelves} onClick={()=>setPreference('showHomeShelves',!settings.showHomeShelves)}><i/></button>)}
+        {row('Genres & moods','Show discovery shortcuts on Home.',<button type="button" className={`setting-switch ${settings.showGenres?'on':''}`} role="switch" aria-checked={settings.showGenres} onClick={()=>setPreference('showGenres',!settings.showGenres)}><i/></button>)}
+        {row('Share theme code','Copy a portable theme JSON/Base64 code.',<button className="setting-action" onClick={async()=>{const raw=JSON.stringify(theme);const code=btoa(unescape(encodeURIComponent(raw)));await navigator.clipboard?.writeText(code);notify('Theme code copied');}}>Copy</button>)}
+        {row('Import theme','Paste a theme JSON/Base64 code.',<button className="setting-action" onClick={async()=>{const code=prompt('Paste theme code');if(!code)return;try{const raw=decodeURIComponent(escape(atob(code)));const parsed=JSON.parse(raw) as ThemeConfig;setTheme(parsed);notify('Theme imported')}catch{notify('Invalid theme code')}}}>Import</button>)}
+      </>}
     </div>
   </section>;
 }

@@ -460,8 +460,6 @@ function Library({ play, queueSong, liked, toggleLike, currentId, playing, liked
   </section>;
 }
 
-function SettingsView({ settings, setPreference, clear }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; clear: () => void }) {
-  const [category, setCategory] = useState<'theme' | 'player' | 'lyrics' | 'home' | 'data'>('theme');
 function SettingsView({ settings, setPreference, theme, setThemeConfig, clear, notify }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; theme: ThemeConfig; setThemeConfig: <K extends keyof ThemeConfig>(field: K, value: ThemeConfig[K]) => void; clear: () => void; notify: (message: string) => void }) {
   const [category, setCategory] = useState<'account'|'audio'|'lyrics'|'integrations'>('audio');
   const [customAccent, setCustomAccent] = useState(theme.accent);

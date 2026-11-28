@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { LiquidGlass } from '@ybouane/liquidglass';
 import ElasticSlider from './components/ElasticSlider';
-import GooeyNav from './components/GooeyNav';
 import { PlayIcon, PauseIcon, VolumeIcon, NextIcon, PreviousIcon, CloseIcon } from './components/PlayerIcons';
 import { usePlayer } from './player';
 import './stability.css';
 import { useLocal } from './store';
 import { fmt, type Artist, type Section, type Settings, type Song } from './types';
 
-const ACCENTS = ['#a3a3a3', '#8b5cf6', '#ec4899', '#22d3ee', '#34d399', '#f59e0b', '#f43f5e'];
+const ACCENTS = ['#2f2d2a', '#d97757', '#8f6f52', '#6f6258'];
 const GENRES = ['Pop', 'Hip hop', 'Lofi', 'Rock', 'Bollywood', 'Tamil hits', 'Electronic', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Romance'];
 const TABS = ['Home', 'Library', 'Discover', 'Settings', 'App'];
 type SearchData = { songs: Song[]; artists: Artist[] };
@@ -43,15 +41,12 @@ export default function App() {
     update();
     return () => { media.removeEventListener?.('change', update); window.removeEventListener('appinstalled', update); };
   }, []);
-  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'dark', compactPlayer: false, playerTheme: 'liquid-glass', glassBlur: 22, glassOpacity: 94, glassRefraction: 72, reduceMotion: false, ambientBackground: true, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
+  const [settings, setSettings] = useLocal<Settings>('vt:settings', { accent: ACCENTS[0], volume: 70, autoplay: true, theme: 'light', compactPlayer: false, playerTheme: 'blur', reduceMotion: false, ambientBackground: false, showHomeShelves: true, showGenres: true, showNavLabels: true, lyricsProvider: 'lrclib' });
   const [liked, setLiked] = useLocal<Song[]>('vt:liked', []);
   const [recent, setRecent] = useLocal<Song[]>('vt:recent', []);
   const [toast, setToast] = useState('');
   const [fullscreenPlayer, setFullscreenPlayer] = useState(false);
   const [fullscreenAmbientLyric, setFullscreenAmbientLyric] = useState('');
-  const fullscreenGlassRoot = useRef<HTMLElement | null>(null);
-  const fullscreenGlassSurface = useRef<HTMLDivElement | null>(null);
-  const fullscreenGlassInstance = useRef<Awaited<ReturnType<typeof LiquidGlass.init>> | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const onPlayed = useCallback((song: Song) => setRecent(items => [song, ...items.filter(item => item.videoId !== song.videoId)].slice(0, 50)), [setRecent]);
   const player = usePlayer(settings.volume, settings.autoplay, onPlayed);
@@ -65,59 +60,9 @@ export default function App() {
     setLiked(items => items.some(item => key(item) === key(song)) ? items.filter(item => key(item) !== key(song)) : [song, ...items]);
   }, [setLiked]);
   useEffect(() => {
-    if (!settings.playerTheme) setSettings(current => ({ ...current, playerTheme: 'liquid-glass' }));
+    if (settings.playerTheme !== 'blur') setSettings(current => ({ ...current, playerTheme: 'blur' }));
   }, [settings.playerTheme, setSettings]);
-  useEffect(() => {
-    if (settings.glassBlur == null || settings.glassOpacity == null || settings.glassRefraction == null) {
-      setSettings(current => ({
-        ...current,
-        glassBlur: current.glassBlur ?? 22,
-        glassOpacity: current.glassOpacity ?? 94,
-        glassRefraction: current.glassRefraction ?? 72
-      }));
-    }
-  }, [settings.glassBlur, settings.glassOpacity, settings.glassRefraction, setSettings]);
 
-  useEffect(() => {
-    // Migrate the previous purple default to the new neutral grey default.
-    if (settings.accent.toLowerCase() === '#8b5cf6') setSettings(current => ({ ...current, accent: '#a3a3a3' }));
-    document.documentElement.style.setProperty('--accent', settings.accent);
-    return () => window.clearTimeout(toastTimer.current);
-  }, [settings.accent, setSettings]);
-  useEffect(() => {
-    if (!fullscreenPlayer || settings.playerTheme !== 'liquid-glass' || settings.reduceMotion) return;
-    const root = fullscreenGlassRoot.current;
-    const glass = fullscreenGlassSurface.current;
-    if (!root || !glass) return;
-    let cancelled = false;
-    glass.dataset.config = JSON.stringify({
-      blurAmount: Math.max(0.05, Math.min(0.5, settings.glassBlur / 100)),
-      refraction: Math.max(0, Math.min(1, settings.glassRefraction / 100)),
-      chromAberration: 0.035,
-      edgeHighlight: 0.08,
-      fresnel: 0.8,
-      cornerRadius: 0,
-      zRadius: 24,
-      opacity: Math.max(0.7, Math.min(1, settings.glassOpacity / 100)),
-      saturation: 0.06,
-      brightness: 0.02,
-      shadowOpacity: 0.12,
-      shadowSpread: 18,
-      shadowOffsetY: 2,
-      floating: false,
-      button: false,
-      bevelMode: 0
-    });
-    void LiquidGlass.init({ root, glassElements: [glass] }).then(instance => {
-      if (cancelled) instance.destroy();
-      else fullscreenGlassInstance.current = instance;
-    }).catch(() => {});
-    return () => {
-      cancelled = true;
-      fullscreenGlassInstance.current?.destroy();
-      fullscreenGlassInstance.current = null;
-    };
-  }, [fullscreenPlayer, settings.playerTheme, settings.glassBlur, settings.glassOpacity, settings.glassRefraction, settings.reduceMotion]);
   useEffect(() => {
     if (!fullscreenPlayer) setFullscreenAmbientLyric('');
   }, [fullscreenPlayer]);
@@ -133,13 +78,16 @@ export default function App() {
   return <div className="app" data-theme={settings.theme} data-player-layout={settings.compactPlayer ? 'compact' : 'default'} data-reduce-motion={settings.reduceMotion ? 'true' : 'false'} data-ambient={settings.ambientBackground ? 'true' : 'false'} data-nav-labels={settings.showNavLabels ? 'true' : 'false'}>
     <header className="top">
       <button className="brand" onClick={() => setTab(0)} aria-label="ValoTune home"><span className="logo"><img className="logo-bloub" src="/valotune-icon.svg" alt="" aria-hidden="true" /></span><span>valo<span className="brand-light">tune</span></span></button>
-      <GooeyNav items={navItems} activeIndex={tab} onChange={index => setTab(index)} color="var(--accent)" size="md" frame particleCount={0} spread={0} animationTime={320} timeVariance={0} gooeyness={0} wobble={0} hoverEffect={false} className="top-nav" />
+      <nav className="top-nav" aria-label="Primary navigation">
+        {navItems.map((item, index) => <button key={item.label} className={index === tab ? 'active' : ''} onClick={() => setTab(index)} aria-current={index === tab ? 'page' : undefined}>{item.label}</button>)}
+      </nav>
     </header>
     <main className="content" key={tab}>
       {tab === 0 && <Home {...view} recent={recent} showHomeShelves={settings.showHomeShelves} showGenres={settings.showGenres} onExplore={term => { setPendingSearch(term); setTab(2); }} />}
       {tab === 1 && <Library {...view} likedList={liked} recent={recent} />}
       {tab === 2 && <Discover {...view} notify={notify} initialQuery={pendingSearch} />}
-      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}\n      {tab === 4 && showAppMenu && <AppDownloads />}
+      {tab === 3 && <SettingsView settings={settings} setPreference={setPreference} clear={() => { setLiked([]); setRecent([]); notify('Library cleared.'); }} />}
+      {tab === 4 && showAppMenu && <AppDownloads />}
     </main>
     <div className="yt-host" aria-label="YouTube playback"><div ref={player.host} /></div>
     {player.current && !fullscreenPlayer && <footer className="player" aria-label="Music player" onClick={event => {
@@ -162,9 +110,9 @@ export default function App() {
       </div>
       <div className="volume"><VolumeIcon size={20} aria-hidden="true" /><ElasticSlider value={settings.volume} onChange={v => { setPreference('volume', v); player.setVolume(v); }} ariaLabel="Playback volume" /></div>
     </footer>}
-    {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className={'fullscreen-player ' + (settings.playerTheme === 'liquid-glass' && !settings.reduceMotion ? 'fullscreen-liquid-enabled' : 'fullscreen-liquid-disabled')} data-player-theme={settings.playerTheme} role="dialog" aria-modal="true" aria-label="Fullscreen music player">
-      {settings.playerTheme === 'liquid-glass' && !settings.reduceMotion && <><div className="fullscreen-liquid-backdrop" style={{ background: '#08080b' }} aria-hidden="true" /><div ref={fullscreenGlassSurface} className="fullscreen-liquid-surface" aria-hidden="true" /></>}
-      <button className="fullscreen-close fullscreen-ai-minimize" onClick={() => setFullscreenPlayer(false)} aria-label="Minimize player"><span className="ai-orb" aria-hidden="true"><i /><i /><i /></span><span className="ai-minimize-label">EXIT</span></button>
+    {fullscreenPlayer && player.current && <section ref={fullscreenGlassRoot} className="fullscreen-player" data-player-theme="blur" role="dialog" aria-modal="true" aria-label="Fullscreen music player">
+      <div className="fullscreen-blur-backdrop" aria-hidden="true" />
+      <button className="fullscreen-close" onClick={() => setFullscreenPlayer(false)} aria-label="Close player">Close</button>
       {fullscreenAmbientLyric && <div className="fullscreen-lyric-ambient" aria-hidden="true"><span key={fullscreenAmbientLyric}>{fullscreenAmbientLyric}</span></div>}
       <div className="fullscreen-layout">
         <aside className="fullscreen-left">
@@ -183,7 +131,7 @@ export default function App() {
               <button className={likedIds.has(player.current.videoId) ? 'fullscreen-track-action is-liked' : 'fullscreen-track-action'} onClick={() => toggleLike(player.current!)} aria-label={likedIds.has(player.current.videoId) ? 'Unlike song' : 'Like song'} aria-pressed={likedIds.has(player.current.videoId)}>
                 <span aria-hidden="true">♡</span>
               </button>
-              <button className="fullscreen-track-action" onClick={() => notify('Add to playlist coming soon.')} aria-label="Add to playlist">
+              <button className="fullscreen-track-action" onClick={() => { player.addToQueue(player.current!); notify('Added to queue.'); }} aria-label="Add to queue">
                 <span aria-hidden="true">＋</span>
               </button>
               <button className="fullscreen-track-action" onClick={async () => { try { await navigator.clipboard?.writeText(window.location.href); notify('Link copied.'); } catch { notify('Share link unavailable.'); } }} aria-label="Share song">
@@ -205,29 +153,13 @@ export default function App() {
   </div>;
 }
 
-function FullscreenPanels({ player, settings, setPreference, onAmbientLyricChange }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; onAmbientLyricChange: (text: string) => void }) {
+function FullscreenPanels({ player, settings, onAmbientLyricChange }: { player: ReturnType<typeof usePlayer>; settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; onAmbientLyricChange: (text: string) => void }) {
   const [panel, setPanel] = useState<'queue' | 'lyrics'>('lyrics');
-  const items = [
-    { label: 'Lyrics', value: 'lyrics' as const },
-    { label: 'Queue', value: 'queue' as const },
-  ];
   return <div className="fullscreen-panel-body">
-    <GooeyNav
-      items={items.map(item => ({ label: item.label }))}
-      activeIndex={panel === 'lyrics' ? 0 : 1}
-      onChange={index => setPanel(items[index]?.value || 'lyrics')}
-      color="var(--accent)"
-      size="sm"
-      frame
-      particleCount={0}
-      spread={0}
-      animationTime={280}
-      timeVariance={0}
-      gooeyness={0}
-      wobble={0}
-      hoverEffect={false}
-      className="fullscreen-panel-nav"
-    />
+    <div className="panel-switcher" role="tablist" aria-label="Player panels">
+      <button className={panel === 'lyrics' ? 'active' : ''} role="tab" aria-selected={panel === 'lyrics'} onClick={() => setPanel('lyrics')}>Lyrics</button>
+      <button className={panel === 'queue' ? 'active' : ''} role="tab" aria-selected={panel === 'queue'} onClick={() => setPanel('queue')}>Queue <span>{player.queue.length}</span></button>
+    </div>
     {panel === 'queue'
       ? <QueuePanel player={player} />
       : <LyricsPanel song={player.current!} time={player.time} provider={settings.lyricsProvider} onSeek={player.seek} onAmbientLyricChange={onAmbientLyricChange} />}
@@ -240,12 +172,15 @@ function QueuePanel({ player }: { player: ReturnType<typeof usePlayer> }) {
     {player.queue.length ? <div className="queue-list">
       {player.queue.map((song, index) => {
         const active = song.videoId === player.current?.videoId;
-        return <button className={'queue-item' + (active ? ' is-current' : '')} key={song.videoId + '-' + index} onClick={() => player.play(song, player.queue)} aria-current={active ? 'true' : undefined}>
-          <span className="queue-index">{active && player.playing ? 'Ⅱ' : String(index + 1).padStart(2, '0')}</span>
-          <img src={song.thumb} alt="" loading="lazy" />
-          <span className="queue-info"><b>{song.name}</b><small>{song.artist}</small></span>
-          <span className="queue-duration">{fmt(song.duration)}</span>{!active && <span className="queue-remove"><button type="button" onClick={(event) => { event.stopPropagation(); player.removeFromQueue(song.videoId); }} aria-label={"Remove " + song.name + " from queue"}>×</button></span>}
-        </button>;
+        return <div className={'queue-item' + (active ? ' is-current' : '')} key={song.videoId + '-' + index}>
+          <button className="queue-main" onClick={() => player.play(song, player.queue)} aria-current={active ? 'true' : undefined}>
+            <span className="queue-index">{active && player.playing ? 'Ⅱ' : String(index + 1).padStart(2, '0')}</span>
+            <img src={song.thumb} alt="" loading="lazy" />
+            <span className="queue-info"><b>{song.name}</b><small>{song.artist}</small></span>
+            <span className="queue-duration">{fmt(song.duration)}</span>
+          </button>
+          {!active && <button className="queue-remove" type="button" onClick={() => player.removeFromQueue(song.videoId)} aria-label={"Remove " + song.name + " from queue"}>×</button>}
+        </div>;
       })}
     </div> : <div className="lyrics-state">Nothing queued yet. Play a track from a shelf to build your queue.</div>}
   </section>;
@@ -283,8 +218,39 @@ function Shelf({ section, play, queueSong, liked, toggleLike, currentId, playing
 }
 function Card({ song, list, play, queueSong, liked, toggleLike, currentId, playing }: { song: Song; list: Song[] } & ViewProps) {
   const isCurrent = currentId === song.videoId;
+  const [failed, setFailed] = useState(false);
+  const [dominant, setDominant] = useState('#3a3530');
+  useEffect(() => {
+    setFailed(false);
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const size = 12;
+        canvas.width = size; canvas.height = size;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) return;
+        context.drawImage(image, 0, 0, size, size);
+        const data = context.getImageData(0, 0, size, size).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; count++; }
+        if (count) setDominant('rgb(' + Math.round(r / count) + ' ' + Math.round(g / count) + ' ' + Math.round(b / count) + ')');
+      } catch { /* remote art may not permit canvas sampling */ }
+    };
+    image.src = song.thumb || '';
+  }, [song.thumb]);
   return <article className={`card ${isCurrent ? 'is-current' : ''}`}>
-    <div className="cover-wrap"><button className="cover-button" onClick={() => play(song, list)} aria-label={`Play ${song.name}`}><img src={song.thumb} alt="" loading="lazy" onError={e => { e.currentTarget.style.opacity = '0'; }} /><span>{isCurrent && playing ? 'Ⅱ' : '▶'}</span></button><button className={liked.has(song.videoId) ? 'cover-like liked' : 'cover-like'} onClick={() => toggleLike(song)} aria-label={liked.has(song.videoId) ? 'Unlike song' : 'Like song'}>{liked.has(song.videoId) ? '♥' : '♡'}</button><button className="cover-queue" onClick={() => queueSong(song)} aria-label={"Add " + song.name + " to queue"}>＋</button></div>
+    <div className="cover-wrap">
+      <button className="cover-button" style={{ '--cover-color': dominant } as React.CSSProperties} onClick={() => play(song, list)} aria-label={`Play ${song.name}`}>
+        {!failed && <img src={song.thumb} alt="" loading="lazy" onError={() => setFailed(true)} />}
+        {failed && <span className="cover-fallback" aria-hidden="true">♫</span>}
+        <span className="cover-skeleton" aria-hidden="true" />
+        <span className="cover-play">{isCurrent && playing ? 'Ⅱ' : '▶'}</span>
+      </button>
+      <button className={liked.has(song.videoId) ? 'cover-like liked' : 'cover-like'} onClick={() => toggleLike(song)} aria-label={liked.has(song.videoId) ? 'Unlike song' : 'Like song'}>{liked.has(song.videoId) ? '♥' : '♡'}</button>
+      <button className="cover-queue" onClick={() => queueSong(song)} aria-label={"Add " + song.name + " to queue"}>＋</button>
+    </div>
     <button className="card-title" onClick={() => play(song, list)} title={song.name}>{song.name}</button><span className="card-artist">{song.artist}</span>
   </article>;
 }
@@ -451,79 +417,68 @@ function Library({ play, queueSong, liked, toggleLike, currentId, playing, liked
 }
 
 function SettingsView({ settings, setPreference, clear }: { settings: Settings; setPreference: <K extends keyof Settings>(field: K, value: Settings[K]) => void; clear: () => void }) {
-  const [category, setCategory] = useState<'theme' | 'glass' | 'player' | 'lyrics' | 'home' | 'data'>('theme');
+  const [category, setCategory] = useState<'theme' | 'player' | 'lyrics' | 'home' | 'data'>('theme');
   const resetPreferences = () => {
-    if (!window.confirm('Reset appearance and playback preferences to their defaults?')) return;
+    if (!window.confirm('Reset ValoTune preferences to their defaults?')) return;
     setPreference('accent', ACCENTS[0]);
     setPreference('volume', 70);
     setPreference('autoplay', true);
-    setPreference('theme', 'dark');
+    setPreference('theme', 'light');
     setPreference('compactPlayer', false);
-    setPreference('playerTheme', 'liquid-glass');
-    setPreference('glassBlur', 22);
-    setPreference('glassOpacity', 94);
-    setPreference('glassRefraction', 72);
+    setPreference('playerTheme', 'blur');
     setPreference('reduceMotion', false);
-    setPreference('ambientBackground', true);
+    setPreference('ambientBackground', false);
     setPreference('showHomeShelves', true);
     setPreference('showGenres', true);
     setPreference('showNavLabels', true);
     setPreference('lyricsProvider', 'lrclib');
   };
   const toggle = (label: string, description: string, field: 'compactPlayer' | 'reduceMotion' | 'ambientBackground' | 'showHomeShelves' | 'showGenres' | 'showNavLabels' | 'autoplay') => (
-    <div className={`panel ${settings[field] ? 'on' : ''}`} key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
+    <div className="panel" key={field}><div><b>{label}</b><span>{description}</span></div><button type="button" className={`toggle ${settings[field] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={settings[field]} onClick={() => setPreference(field, !settings[field])}><i /></button></div>
   );
   const categories = [
-    ['theme', 'Theming', 'Colors and overall appearance'],
-    ['glass', 'Blur & Glass', 'Liquid Glass intensity and surface'],
-    ['player', 'Player', 'Playback controls and layout'],
-    ['lyrics', 'Lyrics', 'Lyrics provider and behavior'],
+    ['theme', 'Theming', 'Palette and surface'],
+    ['player', 'Player', 'Playback, queue and controls'],
+    ['lyrics', 'Lyrics', 'Source and synchronized playback'],
     ['home', 'Home & Navigation', 'Shelves and mobile navigation'],
     ['data', 'Data & Reset', 'Local library and preferences']
   ] as const;
   return <section className="settings-page">
-    <small className="eyebrow">TUNE THE EXPERIENCE</small><h1 className="page-heading">Settings</h1><p className="sub">Organized controls. Changes are saved locally in this browser.</p>
+    <small className="eyebrow">PREFERENCES</small><h1 className="page-heading">Settings</h1><p className="sub">Practical controls. Every change is saved locally.</p>
     <nav className="settings-categories" aria-label="Settings categories">
       {categories.map(([id, label, description]) => <button key={id} className={category === id ? 'active' : ''} onClick={() => setCategory(id as typeof category)}><b>{label}</b><span>{description}</span></button>)}
     </nav>
     <div className="settings-category-panel">
       {category === 'theme' && <div className="settings-group">
-        <div className="settings-title"><h2>Theming</h2><p>Control ValoTune's colors and page surface.</p></div>
-        <div className="panel"><div><b>Theme</b><span>Choose dark, light, or follow your device.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])}><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></div>
-        <div className="panel"><div><b>Accent colour</b><span>Used across navigation, highlights, buttons, and playback controls.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
-        {toggle('Ambient background', 'Keep the subtle colour wash behind the page.', 'ambientBackground')}
-        {toggle('Reduce animations', 'Minimise transitions and moving effects.', 'reduceMotion')}
-      </div>}
-      {category === 'glass' && <div className="settings-group">
-        <div className="settings-title"><h2>Blur & Liquid Glass</h2><p>Fine-tune the fullscreen glass surface without changing the player layout.</p></div>
-        <div className="panel"><div><b>Glass blur</b><span>{settings.glassBlur}%</span></div><div className="panel-slider"><ElasticSlider value={settings.glassBlur} onChange={value => setPreference('glassBlur', value)} ariaLabel="Glass blur intensity" /></div></div>
-        <div className="panel"><div><b>Glass opacity</b><span>{settings.glassOpacity}%</span></div><div className="panel-slider"><ElasticSlider value={settings.glassOpacity} onChange={value => setPreference('glassOpacity', value)} ariaLabel="Glass opacity" /></div></div>
-        <div className="panel"><div><b>Refraction</b><span>{settings.glassRefraction}%</span></div><div className="panel-slider"><ElasticSlider value={settings.glassRefraction} onChange={value => setPreference('glassRefraction', value)} ariaLabel="Glass refraction" /></div></div>
-        <div className="panel"><div><b>Fullscreen player surface</b><span>Choose the visual material used behind the controls.</span></div><select className="settings-select" value={settings.playerTheme} onChange={event => setPreference('playerTheme', event.target.value as Settings['playerTheme'])}><option value="liquid-glass">Liquid Glass</option><option value="default">Classic</option></select></div>
+        <div className="settings-title"><h2>Theming</h2><p>Warm editorial surfaces, restrained contrast, and no decorative effects.</p></div>
+        <div className="panel"><div><b>Theme</b><span>Choose a warm light or warm dark canvas.</span></div><select className="settings-select" value={settings.theme} onChange={event => setPreference('theme', event.target.value as Settings['theme'])}><option value="light">Warm light</option><option value="dark">Warm dark</option><option value="system">System</option></select></div>
+        <div className="panel"><div><b>Accent</b><span>Clay is reserved for the primary action.</span></div><div className="swatches">{ACCENTS.map(color => <button key={color} className={settings.accent === color ? 'on' : ''} style={{ background: color }} onClick={() => setPreference('accent', color)} aria-label={`Accent ${color}`} aria-pressed={settings.accent === color} />)}</div></div>
+        {toggle('Reduce motion', 'Use minimal transitions and stop nonessential motion.', 'reduceMotion')}
+        {toggle('Ambient artwork wash', 'Use the cover colour as a restrained page accent.', 'ambientBackground')}
       </div>}
       {category === 'player' && <div className="settings-group">
         <div className="settings-title"><h2>Player</h2><p>Playback behavior and queue controls.</p></div>
         {toggle('Compact player', 'Use a shorter bottom player on larger screens.', 'compactPlayer')}
-        <div className="panel"><div><b>Default volume</b><span>{settings.volume}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div>
+        <div className="panel"><div><b>Default volume</b><span>{Math.round(settings.volume)}%</span></div><div className="panel-slider"><ElasticSlider value={settings.volume} onChange={value => setPreference('volume', value)} ariaLabel="Default volume" /></div></div>
         {toggle('Autoplay next', 'Continue to the next song when a track ends.', 'autoplay')}
-        <div className="settings-note"><b>Queue</b><span>Use the + button on a song to append it to the current queue. The queue stays deduplicated.</span></div>
+        <div className="settings-note"><b>Queue behavior</b><span>Use + on any track to append it. Duplicate tracks are ignored.</span></div>
       </div>}
       {category === 'lyrics' && <div className="settings-group">
-        <div className="settings-title"><h2>Lyrics</h2><p>Choose where the fullscreen player pulls lyrics from.</p></div>
-        <div className="panel"><div><b>Lyrics source</b><span>LRCLIB is the default and supports synchronized lyrics when available.</span></div><select className="settings-select" value={settings.lyricsProvider} onChange={event => setPreference('lyricsProvider', event.target.value as Settings['lyricsProvider'])}><option value="lrclib">LRCLIB (recommended)</option><option value="ytmusic">YouTube Music</option></select></div>
-        <div className="settings-note"><b>Fullscreen lyrics</b><span>Synced lines can be clicked to seek. The ambient line stays behind the glass player.</span></div>
+        <div className="settings-title"><h2>Lyrics</h2><p>Synchronized lyrics are interactive and seek the player directly.</p></div>
+        <div className="panel"><div><b>Lyrics source</b><span>LRCLIB provides synchronized lyrics when available.</span></div><select className="settings-select" value={settings.lyricsProvider} onChange={event => setPreference('lyricsProvider', event.target.value as Settings['lyricsProvider'])}><option value="lrclib">LRCLIB</option><option value="ytmusic">YouTube Music</option></select></div>
+        <div className="settings-note"><b>Sync</b><span>Click a timestamped lyric line to seek. Manual scrolling pauses automatic centering.</span></div>
       </div>}
       {category === 'home' && <div className="settings-group">
-        <div className="settings-title"><h2>Home & Navigation</h2><p>Control what appears on the main screens.</p></div>
+        <div className="settings-title"><h2>Home & Navigation</h2><p>Reduce clutter on smaller screens.</p></div>
         {toggle('Music shelves', 'Show curated song rows on the home screen.', 'showHomeShelves')}
         {toggle('Explore by mood', 'Show genre and mood shortcuts.', 'showGenres')}
-        {toggle('Show mobile navigation labels', 'Keep text labels under mobile navigation icons.', 'showNavLabels')}
+        {toggle('Mobile navigation labels', 'Show text labels under the mobile navigation.', 'showNavLabels')}
       </div>}
       {category === 'data' && <div className="settings-group">
-        <div className="settings-title"><h2>Data & Reset</h2><p>Manage preferences and locally saved listening data.</p></div>
-        <div className="panel"><div><b>Clear library</b><span>Remove liked songs and listening history from this browser.</span></div><button className="btn" onClick={() => { if (window.confirm('Clear liked songs and listening history from this browser?')) clear(); }}>Clear data</button></div>
-        <div className="panel"><div><b>Reset preferences</b><span>Restore the default appearance, glass, and playback options.</span></div><button className="btn" onClick={resetPreferences}>Reset settings</button></div>
-        <p className="about">ValoTune uses YouTube Music for playback/search, LRCLIB or YouTube Music for lyrics, and TheAudioDB for optional artwork and music metadata.</p>
+        <div className="settings-title"><h2>Data & Reset</h2><p>Manage data stored in this browser.</p></div>
+        <div className="panel"><div><b>Clear library</b><span>Remove liked songs and listening history.</span></div><button className="btn" onClick={() => { if (window.confirm('Clear liked songs and listening history?')) clear(); }}>Clear data</button></div>
+        <div className="panel"><div><b>Reset preferences</b><span>Restore the default ValoTune settings.</span></div><button className="btn" onClick={resetPreferences}>Reset settings</button></div>
+        <p className="about">ValoTune stores preferences and library data locally. Playback uses YouTube; lyrics use the selected provider.</p>
       </div>}
     </div>
   </section>;
@@ -552,30 +507,33 @@ function LyricsPanel({ song, time, provider, onSeek, onAmbientLyricChange }: { s
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
   const activeLine = useRef<HTMLDivElement | null>(null);
+  const linesViewport = useRef<HTMLDivElement | null>(null);
+  const manualScroll = useRef(false);
+  const resumeTimer = useRef<number | undefined>(undefined);
+
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
-    setRecord(null);
-    setStatus('loading');
+    setRecord(null); setStatus('loading'); manualScroll.current = false;
     const loadLyrics = async () => {
       try {
         let data: LyricsRecord | null = null;
         if (provider === 'lrclib') {
           const params = new URLSearchParams({ track_name: song.name, artist_name: song.artist });
           if (song.duration > 0 && song.duration <= 3600) params.set('duration', String(Math.round(song.duration)));
-          let response = await fetch('https://lrclib.net/api/get?' + params.toString(), { signal: controller.signal, headers: { 'X-User-Agent': 'ValoTune/2.0.0 (https://github.com/Snapix/ValoTune)' } });
+          let response = await fetch('https://lrclib.net/api/get?' + params.toString(), { signal: controller.signal, headers: { 'X-User-Agent': 'ValoTune/2.0.0' } });
           if (response.status === 404) {
             const search = new URLSearchParams({ q: song.name + ' ' + song.artist });
-            response = await fetch('https://lrclib.net/api/search?' + search.toString(), { signal: controller.signal, headers: { 'X-User-Agent': 'ValoTune/2.0.0 (https://github.com/Snapix/ValoTune)' } });
+            response = await fetch('https://lrclib.net/api/search?' + search.toString(), { signal: controller.signal });
             if (response.ok) {
               const candidates = await response.json() as LyricsRecord[];
               const title = song.name.toLowerCase().replace(/[^a-z0-9]/g, '');
               const artist = song.artist.toLowerCase().replace(/[^a-z0-9]/g, '');
               data = candidates.find(item => (item.trackName || item.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') === title && (item.artistName || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(artist)) || candidates[0] || null;
-            } else if (response.status === 429) throw new Error('LRCLIB is rate-limiting requests. Try again shortly.');
+            }
           } else if (response.ok) data = await response.json() as LyricsRecord;
-          else if (response.status === 429) throw new Error('LRCLIB is rate-limiting requests. Try again shortly.');
-          else if (!response.ok) throw new Error('LRCLIB request failed.');
+          else if (response.status === 429) throw new Error('Lyrics provider is rate-limiting requests.');
+          else throw new Error('Lyrics request failed.');
         } else {
           const response = await fetch('/api/lyrics?videoId=' + encodeURIComponent(song.videoId), { signal: controller.signal });
           if (response.status === 404) data = null;
@@ -591,8 +549,9 @@ function LyricsPanel({ song, time, provider, onSeek, onAmbientLyricChange }: { s
       }
     };
     void loadLyrics();
-    return () => { cancelled = true; controller.abort(); };
+    return () => { cancelled = true; controller.abort(); window.clearTimeout(resumeTimer.current); };
   }, [song.videoId, song.name, song.artist, song.duration, provider, retryKey]);
+
   const lines = useMemo<LyricLine[]>(() => {
     if (!record) return [];
     if (typeof record.syncedLyrics === 'string' && record.syncedLyrics.trim()) return parseLrc(record.syncedLyrics);
@@ -600,33 +559,43 @@ function LyricsPanel({ song, time, provider, onSeek, onAmbientLyricChange }: { s
     const plain = record.plainLyrics || (typeof record.lyrics === 'string' ? record.lyrics : '');
     return plain.split(/\r?\n/).map(text => ({ time: null, text: text.trim() })).filter(line => line.text);
   }, [record]);
+
   const currentLine = lines.reduce((active, line, index) => line.time !== null && line.time <= time ? index : active, -1);
+
   useEffect(() => {
     if (!onAmbientLyricChange) return;
     const text = status === 'ready' && currentLine >= 0 && lines[currentLine]?.time !== null ? lines[currentLine].text : '';
     onAmbientLyricChange(text);
   }, [status, currentLine, lines, onAmbientLyricChange]);
+
+  useEffect(() => {
+    if (manualScroll.current || !activeLine.current) return;
+    activeLine.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [currentLine]);
+
+  const onLyricsScroll = () => {
+    manualScroll.current = true;
+    window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => { manualScroll.current = false; }, 1800);
+  };
+
   return <section className="lyrics-panel" aria-label="Song lyrics">
     <div className="lyrics-heading"><div><small>FOLLOW ALONG</small><h2>Lyrics</h2></div><span>{provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}</span></div>
     {status === 'loading' && <div className="lyrics-state" role="status">Finding lyrics for this track…</div>}
-    {status === 'error' && <div className="lyrics-state"><p>Lyrics couldn’t be loaded right now.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
+    {status === 'error' && <div className="lyrics-state"><p>Lyrics could not be loaded.</p><button className="lyrics-retry" onClick={() => setRetryKey(value => value + 1)}>Try again</button></div>}
     {status === 'empty' && <div className="lyrics-state">{record?.instrumental ? 'This track is marked as instrumental.' : 'No lyrics found for this track.'}</div>}
-    {status === 'ready' && <div className="lyrics-lines">{lines.map((line, index) => {
-      const seekable = line.time !== null;
-      return <div
-        key={index}
-        ref={index === currentLine ? activeLine : null}
-        className={'lyrics-line' + (index === currentLine ? ' is-current' : '') + (seekable ? ' is-seekable' : '')}
-        onClick={() => { if (line.time !== null) onSeek?.(line.time); }}
-        onKeyDown={event => { if (seekable && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onSeek?.(line.time!); } }}
-        role={seekable ? 'button' : undefined}
-        tabIndex={seekable ? 0 : undefined}
-        aria-label={seekable ? 'Seek to ' + line.text : undefined}
-      >
-        <span className="lyrics-line-text">{line.text}</span>
-      </div>;
-    })}</div>}
-    <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'} · availability varies by track.</p>
+    {status === 'ready' && <div ref={linesViewport} className="lyrics-lines" onScroll={onLyricsScroll}>
+      {lines.map((line, index) => {
+        const seekable = line.time !== null;
+        return <div key={index} ref={index === currentLine ? activeLine : null} className={'lyrics-line' + (index === currentLine ? ' is-current' : '') + (seekable ? ' is-seekable' : '')}
+          onClick={() => { if (line.time !== null) onSeek?.(line.time); }}
+          onKeyDown={event => { if (seekable && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onSeek?.(line.time!); } }}
+          role={seekable ? 'button' : undefined} tabIndex={seekable ? 0 : undefined}>
+          <span className="lyrics-line-text">{line.text}</span>
+        </div>;
+      })}
+    </div>}
+    <p className="lyrics-credit">Lyrics provided by {provider === 'lrclib' ? 'LRCLIB' : 'YouTube Music'}.</p>
   </section>;
 }
 

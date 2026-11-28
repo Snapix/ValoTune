@@ -15,7 +15,6 @@ export interface Settings {
   compactPlayer: boolean;
   playerTheme: 'blur';
   reduceMotion: boolean;
-  ambientBackground: boolean;
   showHomeShelves: boolean;
   showGenres: boolean;
   showNavLabels: boolean;

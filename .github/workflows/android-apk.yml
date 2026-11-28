@@ -1,18 +1,15 @@
-name: Build ValoTune Android Debug APK
+name: Build ValoTune Android APK
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - '.github/workflows/android-apk.yml'
       - 'src/**'
       - 'public/**'
-      - 'index.html'
       - 'package.json'
       - 'capacitor.config.ts'
-      - 'vite.config.*'
-  workflow_dispatch:
+      - '.github/workflows/android-apk.yml'
 
 permissions:
   contents: read
@@ -21,81 +18,35 @@ env:
   VITE_API_BASE_URL: https://valotune.vercel.app
 
 jobs:
-  build-debug:
+  build-apk:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Install dependencies
         run: npm install
-
       - name: Build web app
         run: npm run build
-
       - name: Add Android platform
         run: npx cap add android
-
-      - name: Generate official ValoTune launcher assets
-        run: |
-          mkdir -p assets
-          npm install --no-save sharp @capacitor/assets
-          node --input-type=module <<'NODE'
-          import sharp from 'sharp';
-          import { readFile } from 'node:fs/promises';
-
-          const source = 'public/valotune-icon.svg';
-          const svg = await readFile(source);
-          await sharp(svg)
-            .resize(1024, 1024, { fit: 'contain' })
-            .png()
-            .toFile('assets/icon.png');
-
-          console.log(`Generated Android icon from ${source}`);
-          NODE
-          npx capacitor-assets generate --android --iconBackgroundColor '#0a0a0c'
-
-          echo "Generated launcher resources:"
-          find android/app/src/main/res -type f | grep -E '/mipmap-[^/]+/ic_launcher(_round|_foreground|_background)?\.' | sort
-
       - name: Sync Capacitor
         run: npx cap sync android
-
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew --no-daemon clean assembleDebug
-
-      - name: Verify launcher icon is packaged in APK
-        run: |
-          set -euo pipefail
-          APK=android/app/build/outputs/apk/debug/app-debug.apk
-          test -s "$APK"
-
-          echo "APK size: $(du -h "$APK" | cut -f1)"
-          echo "Launcher icon declaration:"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt" dump badging "$APK" | grep -E "^application:.*icon="
-
-          echo "Packaged launcher resources:"
-          unzip -Z1 "$APK" | grep -E '^res/(mipmap[^/]*/|drawable[^/]*/)(ic_launcher|ic_launcher_round)' | sort
-
-          unzip -Z1 "$APK" | grep -Eq '^res/mipmap[^/]*/ic_launcher[^/]*\.(webp|png)$'
-          unzip -Z1 "$APK" | grep -Eq '^res/mipmap-anydpi[^/]*/ic_launcher[^/]*\.xml$'
-
-      - name: Upload debug APK
+        run: ./gradlew assembleDebug
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: valotune-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 14
